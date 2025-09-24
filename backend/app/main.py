@@ -1,21 +1,18 @@
-# app/main.py (VERSÃO CORRIGIDA E COMPATÍVEL)
+# app/main.py (VERSÃO CORRIGIDA E COMPATÍVEL + CORS FIX)
 
-from fastapi import FastAPI, Request, APIRouter
+from fastapi import FastAPI, Request, APIRouter, Response
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import update
 from sqlalchemy.sql import func
 from jose import jwt, JWTError
-from prometheus_client import make_asgi_app # NOVO: Importa a biblioteca do Prometheus
+from prometheus_client import make_asgi_app
 
 from app.settings import settings
 from app.logging_conf import configure_logging
-# --- IMPORTAÇÕES CORRIGIDAS ---
-# Importa o engine e o sessionmaker, não um objeto 'database'
 from app.services.db import engine, async_session_maker, init_db 
 from app.errors import botocore_error_handler, generic_error_handler
 from botocore.exceptions import BotoCoreError, ClientError
 
-# Importa todos os seus módulos de rotas
 from app.routes import health, events, ingest, search, admin, privacy, users, metrics, auth, uploads, sessions
 from app.schemas.session import active_sessions_table
 from app.security.jwt import SECRET_KEY, ALGORITHM
@@ -28,17 +25,17 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# --- Middlewares ---
+# --- Middleware CORS ---
 origins = settings.CORS_ALLOW_ORIGINS.split(",") if settings.CORS_ALLOW_ORIGINS != "*" else ["*"]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,   # ou ["*"] para teste
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Middleware para atualizar 'last_seen_at' (compatível com seu db.py)
+# --- Middleware JWT / last_seen ---
 @app.middleware("http")
 async def update_last_seen_middleware(request: Request, call_next):
     auth_header = request.headers.get("authorization")
@@ -48,7 +45,6 @@ async def update_last_seen_middleware(request: Request, call_next):
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
             jti = payload.get("jti")
             if jti:
-                # Cria uma sessão de DB usando o sessionmaker
                 async with async_session_maker() as session:
                     async with session.begin():
                         stmt = (
@@ -59,32 +55,30 @@ async def update_last_seen_middleware(request: Request, call_next):
                         await session.execute(stmt)
         except JWTError:
             pass
-            
     response = await call_next(request)
     return response
 
-# --- Eventos de Ciclo de Vida do App (compatível com seu db.py) ---
+# --- Middleware OPTIONS preflight ---
+@app.options("/{full_path:path}")
+async def preflight_handler(full_path: str):
+    return Response(status_code=200)
+
+# --- Eventos de startup/shutdown ---
 @app.on_event("startup")
 async def on_startup():
-    # Esta função pode ser usada se você precisar criar tabelas sem o Alembic
-    # await init_db() 
     pass
 
 @app.on_event("shutdown")
 async def on_shutdown():
-    # Fecha o pool de conexões do engine ao desligar
     await engine.dispose() 
 
-# --- Adicionando o endpoint do Prometheus ---
-# NOVO: Cria uma aplicação de métricas do Prometheus
+# --- Prometheus Metrics ---
 metrics_app = make_asgi_app()
-# NOVO: Monta essa aplicação no endpoint /metrics
 app.mount("/metrics", metrics_app)
 
-# --- Organização das Rotas ---
+# --- Rotas ---
 api_router = APIRouter()
 
-# Adicione todas as suas rotas aqui como antes
 api_router.include_router(health.router, tags=["Health"])
 api_router.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 api_router.include_router(events.router, prefix="/events", tags=["Events"])
@@ -97,14 +91,13 @@ api_router.include_router(users.router, prefix="/users", tags=["Users"])
 # Rotas de Administração
 admin_router = APIRouter(prefix="/admin")
 admin_router.include_router(admin.router, tags=["Admin"])
-# O endpoint /metrics do seu dashboard continua aqui, em /admin/metrics
 admin_router.include_router(metrics.router, prefix="/metrics", tags=["Admin Metrics"])
 admin_router.include_router(sessions.router, prefix="/sessions", tags=["Admin Sessions"])
 api_router.include_router(admin_router)
 
 app.include_router(api_router)
 
-# --- Handlers de Exceção ---
+# --- Exception Handlers ---
 app.add_exception_handler(BotoCoreError, botocore_error_handler)
 app.add_exception_handler(ClientError, botocore_error_handler)
 app.add_exception_handler(Exception, generic_error_handler)
