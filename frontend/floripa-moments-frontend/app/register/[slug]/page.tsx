@@ -10,6 +10,7 @@ async function registerUser(data: {
   whatsapp?: string;
   instagram?: string;
   accepted_lgpd: boolean;
+  event_slug: string; // ✨ Campo 'event_slug' adicionado
 }) {
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/`, {
     method: "POST",
@@ -56,7 +57,11 @@ export default function RegisterPage() {
         videoRef.current.play();
       }
     } else {
-      alert("Seu navegador não suporta captura de vídeo.");
+      // Usar uma abordagem mais amigável do que alert()
+      setMsg({
+        text: "Seu navegador não suporta captura de vídeo.",
+        ok: false,
+      });
     }
   };
 
@@ -108,7 +113,8 @@ export default function RegisterPage() {
     setMsg(null);
 
     try {
-      await registerUser(form);
+      // ✨ Adicionando 'event_slug' ao payload
+      await registerUser({ ...form, event_slug: eventSlug });
 
       const fd = new FormData();
       fd.append("selfie", selfie);
