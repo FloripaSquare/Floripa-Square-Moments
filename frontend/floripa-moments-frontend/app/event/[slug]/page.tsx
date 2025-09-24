@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import Image from "next/image"; // ✨ Importe o componente Image do Next.js
 import { searchFaces } from "@/lib/api";
 import type { SearchOut, ItemUrl } from "@/lib/types";
 
@@ -38,17 +39,24 @@ export default function EventPage({ params }: { params: { slug: string } }) {
       {results && (
         <div className="grid grid-cols-2 gap-2 mt-6">
           {results.items.map((it: ItemUrl) => (
+            // ✨ Adicione 'key' e 'rel' ao link
             <a
               key={it.key}
               href={it.url}
               target="_blank"
               rel="noopener noreferrer"
             >
-              <img
-                src={it.url}
-                alt=""
-                className="w-full h-auto rounded shadow"
-              />
+              <div className="w-full h-auto rounded shadow overflow-hidden">
+                {/* ✨ Use o componente <Image /> */}
+                <Image
+                  src={it.url}
+                  alt="Foto encontrada na busca" // ✨ Adicione uma descrição para acessibilidade
+                  width={600} // Valor de largura de exemplo
+                  height={600} // Valor de altura de exemplo
+                  className="w-full h-full object-cover"
+                  unoptimized // ✨ opcional, se as imagens já estiverem otimizadas
+                />
+              </div>
             </a>
           ))}
         </div>

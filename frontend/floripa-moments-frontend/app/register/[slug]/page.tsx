@@ -3,6 +3,7 @@
 
 import { useState, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
+import Image from "next/image"; // ✨ Importe o componente Image do Next.js
 
 async function registerUser(data: {
   name: string;
@@ -10,7 +11,7 @@ async function registerUser(data: {
   whatsapp?: string;
   instagram?: string;
   accepted_lgpd: boolean;
-  event_slug: string; // ✨ Campo 'event_slug' adicionado
+  event_slug: string; // ✨ Ajuste para aceitar event_slug
 }) {
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/`, {
     method: "POST",
@@ -48,7 +49,6 @@ export default function RegisterPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Ativar câmera
   const startCamera = async () => {
     if (navigator.mediaDevices?.getUserMedia) {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -57,7 +57,6 @@ export default function RegisterPage() {
         videoRef.current.play();
       }
     } else {
-      // Usar uma abordagem mais amigável do que alert()
       setMsg({
         text: "Seu navegador não suporta captura de vídeo.",
         ok: false,
@@ -65,7 +64,6 @@ export default function RegisterPage() {
     }
   };
 
-  // Tirar foto da câmera
   const takePhoto = () => {
     if (!videoRef.current || !canvasRef.current) return;
 
@@ -81,16 +79,14 @@ export default function RegisterPage() {
         const file = new File([blob], "selfie.jpg", { type: "image/jpeg" });
         setSelfie(file);
         setSelfiePreview(URL.createObjectURL(file));
-        setUseCamera(false); // fecha a câmera
+        setUseCamera(false);
       }
     }, "image/jpeg");
 
-    // Para a câmera
     const stream = videoRef.current.srcObject as MediaStream;
     stream.getTracks().forEach((track) => track.stop());
   };
 
-  // Upload de arquivo da galeria
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -113,8 +109,7 @@ export default function RegisterPage() {
     setMsg(null);
 
     try {
-      // ✨ Adicionando 'event_slug' ao payload
-      await registerUser({ ...form, event_slug: eventSlug });
+      await registerUser({ ...form, event_slug: eventSlug }); // ✨ Enviando o slug
 
       const fd = new FormData();
       fd.append("selfie", selfie);
@@ -153,7 +148,6 @@ export default function RegisterPage() {
           Cadastro & Selfie
         </h1>
 
-        {/* Campos do usuário */}
         {["name", "email", "whatsapp", "instagram"].map((field) => (
           <div key={field}>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -182,7 +176,6 @@ export default function RegisterPage() {
           </div>
         ))}
 
-        {/* Selfie */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Sua Selfie
@@ -230,9 +223,11 @@ export default function RegisterPage() {
 
           {selfiePreview && (
             <div className="flex flex-col items-center gap-2 mt-2">
-              <img
+              <Image // ✨ Usando o componente Image
                 src={selfiePreview}
                 alt="Selfie"
+                width={192} // Tamanho de exemplo
+                height={192} // Tamanho de exemplo
                 className="w-48 h-48 object-cover rounded"
               />
               <button
@@ -251,7 +246,6 @@ export default function RegisterPage() {
           <canvas ref={canvasRef} className="hidden" />
         </div>
 
-        {/* LGPD */}
         <label className="flex items-center space-x-2 text-gray-700">
           <input
             type="checkbox"

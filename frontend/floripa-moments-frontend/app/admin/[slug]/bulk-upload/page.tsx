@@ -5,7 +5,8 @@ import { useParams } from "next/navigation";
 import { bulkUpload } from "@/lib/api";
 
 export default function BulkUpload() {
-  const { slug } = useParams<{ slug: string }>();
+  const params = useParams<{ slug?: string }>();
+  const slug = params?.slug;
 
   const [files, setFiles] = useState<FileList | null>(null);
   const [user, setUser] = useState("admin");
@@ -13,7 +14,11 @@ export default function BulkUpload() {
   const [msg, setMsg] = useState("");
 
   async function handleUpload() {
-    if (!files?.length) return;
+    if (!slug || !files?.length) {
+      setMsg("Erro: Slug não encontrado ou nenhum arquivo selecionado.");
+      return;
+    }
+
     try {
       const arr = Array.from(files);
       const res = await bulkUpload(slug, arr, user, pass);
@@ -23,6 +28,16 @@ export default function BulkUpload() {
         err instanceof Error ? "Erro: " + err.message : "Erro inesperado."
       );
     }
+  }
+
+  // Se o slug não for válido, exibe uma mensagem de erro em vez de quebrar o componente
+  if (!slug) {
+    return (
+      <main className="p-6 max-w-lg mx-auto text-center text-red-600">
+        <h1 className="text-xl font-bold mb-4">Erro de URL</h1>
+        <p>O slug do evento não foi encontrado na URL. Verifique o endereço.</p>
+      </main>
+    );
   }
 
   return (

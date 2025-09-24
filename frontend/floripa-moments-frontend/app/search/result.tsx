@@ -1,44 +1,49 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import type { SearchOut, ItemUrl } from "@/lib/types";
 import Image from "next/image";
 
 export default function ResultPage() {
-  const params = useParams<{ slug: string }>();
-  const eventSlug = params.slug;
+  const params = useParams<{ slug?: string }>();
+  const eventSlug = params?.slug;
 
   const [items, setItems] = useState<ItemUrl[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  async function fetchPhotos(cursor: string | null = null) {
-    setLoading(true);
-    try {
-      const url =
-        `/api/search/${eventSlug}` + (cursor ? `?last_seen_key=${cursor}` : "");
-      const res = await fetch(url);
-      const data: SearchOut = await res.json();
+  const fetchPhotos = useCallback(
+    async (cursor: string | null = null) => {
+      if (!eventSlug) return;
 
-      // Filtra itens com URL válida
-      const validItems = data.items.filter(
-        (item) => item.url && item.url.trim() !== ""
-      );
+      setLoading(true);
+      try {
+        const url =
+          `/api/search/${eventSlug}` +
+          (cursor ? `?last_seen_key=${cursor}` : "");
+        const res = await fetch(url);
+        const data: SearchOut = await res.json();
 
-      setItems((prev) => [...prev, ...validItems]);
-      setNextCursor(data.nextCursor || null);
-    } catch (err) {
-      console.error("Erro ao buscar fotos:", err);
-    } finally {
-      setLoading(false);
-    }
-  }
+        const validItems = data.items.filter(
+          (item) => item.url && item.url.trim() !== ""
+        );
+
+        setItems((prev) => [...prev, ...validItems]);
+        setNextCursor(data.nextCursor || null);
+      } catch (err) {
+        console.error("Erro ao buscar fotos:", err);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [eventSlug]
+  );
 
   useEffect(() => {
     fetchPhotos();
-  }, [eventSlug]);
+  }, [fetchPhotos]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -53,7 +58,7 @@ export default function ResultPage() {
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [nextCursor, loading]);
+  }, [nextCursor, loading, fetchPhotos]);
 
   const downloadFile = (url: string) => {
     const link = document.createElement("a");
@@ -63,6 +68,18 @@ export default function ResultPage() {
     link.click();
     document.body.removeChild(link);
   };
+
+  if (!eventSlug) {
+    return (
+      <main className="min-h-screen w-full items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <p className="mt-2 text-gray-600">
+            O slug do evento não foi encontrado.
+          </p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-gray-50 p-6" ref={containerRef}>

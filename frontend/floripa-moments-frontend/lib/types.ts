@@ -1,13 +1,14 @@
-export interface ItemUrl {
-  key: string;
-  url: string;
-}
-
 // lib/types.ts
+export type ItemUrl = {
+  url: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [key: string]: any; // caso tenha outros campos dinâmicos
+};
+
 export type SearchOut = {
-  [x: string]: null;
-  items: ItemUrl[]; // 👈 agora é array de objetos
-  zip?: string; // 👈 backend chama zip, não zip_url
+  items: ItemUrl[]; // array de objetos, obrigatório
+  zip?: string; // optional
+  nextCursor?: string | null; // opcional para paginação
 };
 
 export interface UserOut {
