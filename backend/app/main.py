@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import update
 from sqlalchemy.sql import func
 from jose import jwt, JWTError
+from prometheus_client import make_asgi_app # NOVO: Importa a biblioteca do Prometheus
 
 from app.settings import settings
 from app.logging_conf import configure_logging
@@ -74,6 +75,12 @@ async def on_shutdown():
     # Fecha o pool de conexões do engine ao desligar
     await engine.dispose() 
 
+# --- Adicionando o endpoint do Prometheus ---
+# NOVO: Cria uma aplicação de métricas do Prometheus
+metrics_app = make_asgi_app()
+# NOVO: Monta essa aplicação no endpoint /metrics
+app.mount("/metrics", metrics_app)
+
 # --- Organização das Rotas ---
 api_router = APIRouter()
 
@@ -90,6 +97,7 @@ api_router.include_router(users.router, prefix="/users", tags=["Users"])
 # Rotas de Administração
 admin_router = APIRouter(prefix="/admin")
 admin_router.include_router(admin.router, tags=["Admin"])
+# O endpoint /metrics do seu dashboard continua aqui, em /admin/metrics
 admin_router.include_router(metrics.router, prefix="/metrics", tags=["Admin Metrics"])
 admin_router.include_router(sessions.router, prefix="/sessions", tags=["Admin Sessions"])
 api_router.include_router(admin_router)
