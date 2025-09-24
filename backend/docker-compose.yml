@@ -1,5 +1,6 @@
+version: '3.9'
+
 services:
-  # Seu backend (sem alteração)
   backend:
     build: .
     container_name: moments-backend
@@ -7,39 +8,55 @@ services:
       - .env
     networks:
       - app-network
+    expose:
+      - "8080" # Apenas exposição interna, Traefik e Nginx acessam
 
-  # Seu Nginx (sem alteração)
   nginx:
     image: nginx:latest
     container_name: floripa-nginx
-    ports:
-      - "8080:80"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
+    networks:
+      - app-network
     depends_on:
       - backend
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.nginx.rule=Host(`seu-dominio.com`)"
+      - "traefik.http.routers.nginx.entrypoints=web,websecure"
+      - "traefik.http.routers.nginx.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.nginx.middlewares=redirect-to-https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+
+  traefik:
+    image: traefik:v2.10
+    container_name: traefik
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./acme.json:/acme.json
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - app-network
 
-  # Novo serviço para o Prometheus
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
     volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
     ports:
-      - "9090:9090" # Acesso ao Prometheus em http://<EC2_IP>:9090
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
+      - "9090:9090"
     networks:
       - app-network
 
-  # Novo serviço para o Grafana
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
     ports:
-      - "3000:3000" # Acesso ao Grafana em http://<EC2_IP>:3000
+      - "3000:3000"
     networks:
       - app-network
     depends_on:

@@ -1,0 +1,20 @@
+entryPoints:
+  websecure:
+    address: ":443"
+    tls:
+      certificates:
+        - certFile: /certs/selfsigned.crt
+          keyFile: /certs/selfsigned.key
+
+
+providers:
+  docker:
+    exposedByDefault: false
+
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: seu-email@exemplo.com
+      storage: /acme.json
+      httpChallenge:
+        entryPoint: web
