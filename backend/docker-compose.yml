@@ -1,0 +1,26 @@
+services:
+  # Serviço do seu backend
+  backend:
+    build: . # Constrói a imagem a partir do Dockerfile no diretório atual
+    container_name: moments-backend
+    env_file:
+      - .env # Carrega as variáveis de ambiente
+    networks:
+      - app-network
+
+  # Serviço do Nginx como proxy reverso
+  nginx:
+    image: nginx:latest
+    container_name: floripa-nginx
+    ports:
+      - "80:80" # Mapeia a porta 80 da EC2 para a porta 80 do Nginx
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf # Mapeia o arquivo de configuração do Nginx
+    depends_on:
+      - backend # Garante que o backend suba antes do Nginx
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
