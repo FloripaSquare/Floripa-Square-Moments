@@ -12,8 +12,8 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.backend.rule=Host(`backend.local`)"
       - "traefik.http.routers.backend.entrypoints=web"
-    expose:
-      - "8080"
+    ports:
+      - "8080:8080"
 
   traefik:
     image: traefik:v2.10
