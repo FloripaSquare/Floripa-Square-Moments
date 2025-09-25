@@ -1,9 +1,8 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
-import Image from "next/image"; // ✨ Importe o componente Image do Next.js
+import Image from "next/image";
 
 async function registerUser(data: {
   name: string;
@@ -11,7 +10,6 @@ async function registerUser(data: {
   whatsapp?: string;
   instagram?: string;
   accepted_lgpd: boolean;
-  event_slug: string; // ✨ Ajuste para aceitar event_slug
 }) {
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/`, {
     method: "POST",
@@ -57,10 +55,7 @@ export default function RegisterPage() {
         videoRef.current.play();
       }
     } else {
-      setMsg({
-        text: "Seu navegador não suporta captura de vídeo.",
-        ok: false,
-      });
+      alert("Seu navegador não suporta captura de vídeo.");
     }
   };
 
@@ -95,7 +90,14 @@ export default function RegisterPage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleWhatsappChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let val = e.target.value.replace(/\D/g, ""); // remove tudo que não é número
+    if (val.length > 11) val = val.slice(0, 11);
+    val = val.replace(/(\d{2})(\d{5})(\d{0,4})/, "($1) $2-$3");
+    setForm({ ...form, whatsapp: val });
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!selfie) {
       setMsg({
@@ -109,7 +111,7 @@ export default function RegisterPage() {
     setMsg(null);
 
     try {
-      await registerUser({ ...form, event_slug: eventSlug }); // ✨ Enviando o slug
+      await registerUser(form);
 
       const fd = new FormData();
       fd.append("selfie", selfie);
@@ -139,43 +141,77 @@ export default function RegisterPage() {
   };
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-blue-600 to-blue-800 p-4">
+    <main
+      className="min-h-screen flex flex-col items-center justify-center p-4 bg-cover bg-center"
+      style={{ backgroundImage: "url('/bg-form.png')" }}
+    >
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-sm bg-white shadow-lg rounded-2xl p-6 space-y-4"
+        className="w-full max-w-sm bg-white shadow-lg rounded-md p-6 space-y-4"
       >
         <h1 className="text-2xl font-bold text-center text-gray-800">
           Cadastro & Selfie
         </h1>
 
-        {["name", "email", "whatsapp", "instagram"].map((field) => (
-          <div key={field}>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {field.charAt(0).toUpperCase() + field.slice(1)}
-            </label>
-            <input
-              type={
-                field === "email"
-                  ? "email"
-                  : field === "whatsapp"
-                  ? "tel"
-                  : "text"
-              }
-              value={(form as any)[field]}
-              onChange={(e) => setForm({ ...form, [field]: e.target.value })}
-              placeholder={
-                field === "email"
-                  ? "seu@email.com"
-                  : field === "whatsapp"
-                  ? "(00) 00000-0000"
-                  : "@usuario"
-              }
-              className="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              required={field === "name" || field === "email"}
-            />
-          </div>
-        ))}
+        {/* Nome */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Nome
+          </label>
+          <input
+            type="text"
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            placeholder="Seu nome"
+            className="w-full bg-gray-50 border border-gray-300 rounded-md px-3 py-2 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            required
+          />
+        </div>
 
+        {/* Email */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Email
+          </label>
+          <input
+            type="email"
+            value={form.email}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+            placeholder="seu@email.com"
+            className="w-full bg-gray-50 border border-gray-300 rounded-md px-3 py-2 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            required
+          />
+        </div>
+
+        {/* WhatsApp */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            WhatsApp
+          </label>
+          <input
+            type="tel"
+            value={form.whatsapp}
+            onChange={handleWhatsappChange}
+            placeholder="(00) 00000-0000"
+            className="w-full bg-gray-50 border border-gray-300 rounded-md px-3 py-2 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          />
+        </div>
+
+        {/* Instagram */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Instagram
+          </label>
+          <input
+            type="text"
+            value={form.instagram}
+            onChange={(e) => setForm({ ...form, instagram: e.target.value })}
+            placeholder="@usuario"
+            className="w-full bg-gray-50 border border-gray-300 rounded-md px-3 py-2 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          />
+        </div>
+
+        {/* Selfie */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Sua Selfie
@@ -223,11 +259,12 @@ export default function RegisterPage() {
 
           {selfiePreview && (
             <div className="flex flex-col items-center gap-2 mt-2">
-              <Image // ✨ Usando o componente Image
+              <Image
                 src={selfiePreview}
                 alt="Selfie"
-                width={192} // Tamanho de exemplo
-                height={192} // Tamanho de exemplo
+                width={192}
+                height={192}
+                unoptimized
                 className="w-48 h-48 object-cover rounded"
               />
               <button
@@ -246,6 +283,7 @@ export default function RegisterPage() {
           <canvas ref={canvasRef} className="hidden" />
         </div>
 
+        {/* LGPD */}
         <label className="flex items-center space-x-2 text-gray-700">
           <input
             type="checkbox"
@@ -261,6 +299,7 @@ export default function RegisterPage() {
           </span>
         </label>
 
+        {/* Submit */}
         <button
           type="submit"
           className={`w-full bg-blue-600 text-white font-semibold py-3 rounded-lg hover:bg-blue-700 transition flex items-center justify-center ${
@@ -268,9 +307,9 @@ export default function RegisterPage() {
           }`}
           disabled={loading}
         >
-          {loading ? (
+          {loading && (
             <span className="animate-spin border-2 border-white border-t-transparent rounded-full w-5 h-5 mr-2"></span>
-          ) : null}
+          )}
           Enviar & Buscar Fotos
         </button>
 

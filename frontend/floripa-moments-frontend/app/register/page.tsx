@@ -1,9 +1,9 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
+import InputMask from "react-input-mask";
 
 async function registerUser(data: {
   name: string;
@@ -91,7 +91,7 @@ export default function RegisterPage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!selfie) {
       setMsg({
@@ -135,43 +135,89 @@ export default function RegisterPage() {
   };
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-blue-600 to-blue-800 p-4">
+    <main
+      className="min-h-screen flex flex-col items-center justify-center p-4 bg-cover bg-center"
+      style={{ backgroundImage: "url('/bg-form.png')" }}
+    >
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-sm bg-white shadow-lg rounded-2xl p-6 space-y-4"
+        className="w-full max-w-sm bg-white shadow-lg rounded-lg p-6 space-y-4"
       >
         <h1 className="text-2xl font-bold text-center text-gray-800">
           Cadastro & Selfie
         </h1>
 
-        {["name", "email", "whatsapp", "instagram"].map((field) => (
-          <div key={field}>
+        {/* Campos */}
+        <div className="space-y-4">
+          {/* Nome */}
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              {field.charAt(0).toUpperCase() + field.slice(1)}
+              Nome
             </label>
             <input
-              type={
-                field === "email"
-                  ? "email"
-                  : field === "whatsapp"
-                  ? "tel"
-                  : "text"
-              }
-              value={(form as any)[field]}
-              onChange={(e) => setForm({ ...form, [field]: e.target.value })}
-              placeholder={
-                field === "email"
-                  ? "seu@email.com"
-                  : field === "whatsapp"
-                  ? "(00) 00000-0000"
-                  : "@usuario"
-              }
-              className="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              required={field === "name" || field === "email"}
+              type="text"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              placeholder="Seu nome"
+              className="w-full bg-gray-50 border border-gray-300 rounded-md px-3 py-2 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              required
             />
           </div>
-        ))}
 
+          {/* Email */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Email
+            </label>
+            <input
+              type="email"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              placeholder="seu@email.com"
+              className="w-full bg-gray-50 border border-gray-300 rounded-md px-3 py-2 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              required
+            />
+          </div>
+
+          {/* WhatsApp com máscara */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              WhatsApp
+            </label>
+            <InputMask
+              mask="(99) 99999-9999"
+              value={form.whatsapp}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setForm({ ...form, whatsapp: e.target.value })
+              }
+            >
+              {(inputProps: React.InputHTMLAttributes<HTMLInputElement>) => (
+                <input
+                  {...inputProps}
+                  type="tel"
+                  placeholder="(00) 00000-0000"
+                  className="w-full bg-gray-50 border border-gray-300 rounded-md px-3 py-2 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              )}
+            </InputMask>
+          </div>
+
+          {/* Instagram */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Instagram
+            </label>
+            <input
+              type="text"
+              value={form.instagram}
+              onChange={(e) => setForm({ ...form, instagram: e.target.value })}
+              placeholder="@usuario"
+              className="w-full bg-gray-50 border border-gray-300 rounded-md px-3 py-2 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            />
+          </div>
+        </div>
+
+        {/* Selfie */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Sua Selfie
@@ -243,6 +289,7 @@ export default function RegisterPage() {
           <canvas ref={canvasRef} className="hidden" />
         </div>
 
+        {/* LGPD */}
         <label className="flex items-center space-x-2 text-gray-700">
           <input
             type="checkbox"
@@ -258,6 +305,7 @@ export default function RegisterPage() {
           </span>
         </label>
 
+        {/* Submit */}
         <button
           type="submit"
           className={`w-full bg-blue-600 text-white font-semibold py-3 rounded-lg hover:bg-blue-700 transition flex items-center justify-center ${
