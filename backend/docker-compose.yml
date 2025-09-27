@@ -10,19 +10,23 @@ services:
       - app-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.backend.rule=Host(`backend.local`)"
-      - "traefik.http.routers.backend.entrypoints=web"
-    ports:
-      - "8080:8080"
+      - "traefik.http.routers.backend.rule=Host(`moments.floripasquare.com.br`)"
+      - "traefik.http.routers.backend.entrypoints=websecure"
+      - "traefik.http.routers.backend.tls=true"
+      - "traefik.http.routers.backend.tls.certresolver=myresolver"
+    expose:
+      - "8080"
 
   traefik:
     image: traefik:v2.10
     container_name: traefik
     restart: unless-stopped
     ports:
-      - "80:80" # Traefik interno
+      - "80:80"
+      - "443:443"
     volumes:
       - ./traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./letsencrypt:/letsencrypt
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - app-network
@@ -36,28 +40,18 @@ services:
       - "9090:9090"
     networks:
       - app-network
+    restart: unless-stopped
 
-  # grafana:
-  #   image: grafana/grafana:latest
-  #   container_name: grafana
-  #   ports:
-  #     - "3000:3000"
-  #   networks:
-  #     - app-network
-  #   depends_on:
-  #     - prometheus
-
-  ngrok:
-    image: wernight/ngrok
-    container_name: ngrok
-    depends_on:
-      - backend
-    environment:
-      - NGROK_PORT=backend:8080
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
     ports:
-      - "4040:4040" # Painel do ngrok
+      - "3000:3000"
     networks:
       - app-network
+    depends_on:
+      - prometheus
+    restart: unless-stopped
 
 networks:
   app-network:

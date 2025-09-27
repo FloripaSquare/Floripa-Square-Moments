@@ -1,7 +1,39 @@
+log:
+  level: INFO
+
+api:
+  dashboard: true
+  insecure: false
+
 entryPoints:
   web:
     address: ":80"
+  websecure:
+    address: ":443"
 
 providers:
   docker:
     exposedByDefault: false
+
+certificatesResolvers:
+  myresolver:
+    acme:
+      email: matheusmbarros01@gmail.com
+      storage: /letsencrypt/acme.json
+      httpChallenge:
+        entryPoint: web
+
+http:
+  routers:
+    http-catchall:
+      rule: "HostRegexp(`{host:.+}`)"
+      entryPoints:
+        - web
+      middlewares:
+        - redirect-to-https
+
+  middlewares:
+    redirect-to-https:
+      redirectScheme:
+        scheme: https
+        permanent: true
