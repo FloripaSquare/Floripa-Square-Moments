@@ -18,7 +18,7 @@ export default function CreateEventForm({ onCreated }: CreateEventFormProps) {
   const [newEvent, setNewEvent] = useState<NewEvent>({
     slug: "",
     title: "",
-    privacy_url: "https://www.floripamoments.com/privacy-politcs",
+    privacy_url: "https://www.moments.floripaquare.com.br/privacy-politcs",
   });
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
@@ -108,6 +108,15 @@ export default function CreateEventForm({ onCreated }: CreateEventFormProps) {
           placeholder="Ex: casamento-joao-e-maria"
         />
       </div>
+      <p className="mt-1 text-sm text-gray-500">
+        O usuário terá acesso através da seguinte URL:
+      </p>
+      <input
+        type="text"
+        value={"https://moments.floripaquare.com.br/" + newEvent.slug}
+        readOnly
+        className="mt-1 w-full px-3 py-2 border border-gray-400 rounded bg-gray-50 text-gray-900"
+      />
 
       {message && (
         <p

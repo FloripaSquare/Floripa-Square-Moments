@@ -200,6 +200,10 @@ export default function ResultPage() {
             {searchResult.count} foto{searchResult.count !== 1 ? "s" : ""}{" "}
             encontrada{searchResult.count !== 1 ? "s" : ""}
           </h1>
+          <p className="text-gray-600">
+            Pressione por alguns segundos a foto para opções de download direto
+            no celular
+          </p>
 
           {selectedKeys.size > 0 && (
             <button
