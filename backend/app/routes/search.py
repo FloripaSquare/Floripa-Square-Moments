@@ -6,11 +6,13 @@ from app.services.db import get_conn
 from app.schemas.search import SearchOut, ItemUrl
 from app.routes.uploads import validate_image_bytes
 from app.services.zips import create_zip_from_keys
-# --- 1. Importe a função de métricas ---
 from app.services.metrics import track
+from app.security.jwt import require_user  # 👈 para identificar usuário logado
 import hashlib
+import time
 
 router = APIRouter()
+
 
 @router.post("/{event_slug}", response_model=SearchOut)
 async def search_faces(
@@ -19,10 +21,11 @@ async def search_faces(
     selfie: UploadFile = File(...),
     create_zip: bool = False,
     conn: AsyncSession = Depends(get_conn),
-):
+    user=Depends(require_user)):
     """
     Busca faces correspondentes a uma imagem de selfie em um evento específico.
     """
+    start_time = time.time()
     img_bytes = await selfie.read()
     validate_image_bytes(img_bytes)
 
@@ -46,11 +49,25 @@ async def search_faces(
         zip_hash = hashlib.md5(str(keys_tuple).encode()).hexdigest()
         zip_key = f"zips/search-{zip_hash}.zip"
         background_tasks.add_task(create_zip_from_keys, s3_keys, zip_key)
-        zip_download_url = presign_get(BUCKET_RAW, zip_key, expires=3600)
+        zip_download_url = presign_get(BUCKET_RAW, zip_key, expires=300)
 
-    # --- 2. ADICIONE A CHAMADA PARA REGISTRAR A MÉTRICA ---
-    # Registra a métrica de busca após a operação ser concluída com sucesso.
-    await track(conn, action="search", event_slug=event_slug)
-    await conn.commit() # Garante que a métrica seja salva
+    duration = time.time() - start_time
+
+    # --- exemplo de track atualizado ---
+    await track(
+    conn,
+    action="search",
+    user_id=user["user_id"],
+    event_slug=event_slug,
+    data={
+        "file_size": len(img_bytes),
+        "matches_count": len(s3_keys),
+        "create_zip": create_zip,
+        "duration_ms": int(duration * 1000),
+    }
+    )
+
+
+    await conn.commit()
 
     return SearchOut(count=len(s3_keys), items=urls, zip=zip_download_url)

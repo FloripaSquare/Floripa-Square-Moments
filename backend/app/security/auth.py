@@ -1,4 +1,4 @@
-# backend/app/security/auth.py
+# app/security/auth.py
 
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
@@ -17,10 +17,6 @@ USER = _read_env("BASIC_ADMIN_USER", "admin")
 PASS = _read_env("BASIC_ADMIN_PASS", "troque-isto")
 
 def require_basic(credentials: HTTPBasicCredentials = Depends(security)):
-    # DEBUG TEMPORÁRIO — remova depois que funcionar
-    print("AUTH DEBUG -> provided:", repr(credentials.username), repr(credentials.password))
-    print("AUTH DEBUG -> expected:", repr(USER), repr(PASS))
-
     ok_user = secrets.compare_digest(credentials.username, USER)
     ok_pass = secrets.compare_digest(credentials.password, PASS)
     if not (ok_user and ok_pass):

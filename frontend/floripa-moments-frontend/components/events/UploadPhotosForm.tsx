@@ -11,24 +11,28 @@ interface Event {
 }
 
 interface UploadPhotosFormProps {
-  events: Event[];
+  events: Event[]; // Lista de eventos disponíveis (para admins)
+  userRole: "ADMIN" | "PHOTOGRAPHER"; // Role do usuário
+  eventSlug?: string; // Slug do evento do fotógrafo (opcional para admin)
   onUploaded?: () => void;
 }
 
 export default function UploadPhotosForm({
   events,
+  userRole,
+  eventSlug,
   onUploaded,
 }: UploadPhotosFormProps) {
   const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
-  const [selectedEvent, setSelectedEvent] = useState("");
+  const [selectedEvent, setSelectedEvent] = useState(
+    userRole === "PHOTOGRAPHER" ? eventSlug || "" : ""
+  );
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setMessage(""); // Limpa a mensagem ao selecionar novos arquivos
-    if (e.target.files) {
-      setSelectedFiles(e.target.files);
-    }
+    setMessage("");
+    if (e.target.files) setSelectedFiles(e.target.files);
   };
 
   const handleUpload = async (e: React.FormEvent) => {
@@ -42,7 +46,10 @@ export default function UploadPhotosForm({
     setMessage("");
 
     try {
-      const token = localStorage.getItem("admin_token");
+      const token =
+        userRole === "ADMIN"
+          ? localStorage.getItem("admin_token")
+          : localStorage.getItem("photographer_token");
       if (!token) throw new Error("Token não encontrado");
 
       const formData = new FormData();
@@ -50,7 +57,6 @@ export default function UploadPhotosForm({
         formData.append("files", file)
       );
 
-      // Rota de ingestão de fotos por evento
       const res = await fetch(`${API_URL}/uploads/${selectedEvent}/photos`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
@@ -67,9 +73,7 @@ export default function UploadPhotosForm({
         `✅ ${data.uploaded_keys.length} foto(s) enviada(s) com sucesso!`
       );
 
-      // Limpa o formulário após o sucesso
       setSelectedFiles(null);
-      setSelectedEvent(events[0]?.slug || "");
       if (document.getElementById("file-upload")) {
         (document.getElementById("file-upload") as HTMLInputElement).value = "";
       }
@@ -85,31 +89,33 @@ export default function UploadPhotosForm({
 
   return (
     <form onSubmit={handleUpload} className="space-y-4">
-      <div>
-        <label
-          htmlFor="event-select"
-          className="block text-sm font-medium text-gray-700"
-        >
-          Selecione o Evento
-        </label>
-        <select
-          id="event-select"
-          value={selectedEvent}
-          onChange={(e) => setSelectedEvent(e.target.value)}
-          disabled={loading}
-          required
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-        >
-          <option value="" disabled>
-            -- Escolha um evento --
-          </option>
-          {events.map((event) => (
-            <option key={event.slug} value={event.slug}>
-              {event.title}
+      {userRole === "ADMIN" && (
+        <div>
+          <label
+            htmlFor="event-select"
+            className="block text-sm font-medium text-gray-700"
+          >
+            Selecione o Evento
+          </label>
+          <select
+            id="event-select"
+            value={selectedEvent}
+            onChange={(e) => setSelectedEvent(e.target.value)}
+            disabled={loading}
+            required
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="" disabled>
+              -- Escolha um evento --
             </option>
-          ))}
-        </select>
-      </div>
+            {events.map((event) => (
+              <option key={event.slug} value={event.slug}>
+                {event.title}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div>
         <label className="block text-sm font-medium text-gray-700">

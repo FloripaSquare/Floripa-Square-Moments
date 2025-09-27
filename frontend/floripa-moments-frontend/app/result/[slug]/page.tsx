@@ -1,15 +1,9 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState, useRef, memo } from "react";
 import Image from "next/image";
-import {
-  ArrowDownTrayIcon,
-  ArchiveBoxArrowDownIcon,
-  ArrowPathIcon,
-} from "@heroicons/react/24/solid";
-import JSZip from "jszip";
-import { saveAs } from "file-saver";
+import { ArrowDownTrayIcon, ArrowPathIcon } from "@heroicons/react/24/solid";
 
 // --- Tipos ---
 type SearchItem = {
@@ -19,17 +13,20 @@ type SearchItem = {
 type SearchOut = {
   count: number;
   items: SearchItem[];
-  zip: string | null;
 };
 
-// --- Componente do Card da Imagem (Otimizado e Corrigido) ---
-const ImageCard = memo(function ImageCard({ item }: { item: SearchItem }) {
-  const getOriginalFilename = (s3Key: string): string => {
-    const parts = s3Key.split("-");
-    if (parts.length > 2) {
-      return decodeURIComponent(parts.slice(2).join("-").replace(/_/g, " "));
-    }
-    return s3Key.split("/").pop() || "download.jpg";
+// --- Componente do Card da Imagem ---
+const ImageCard = memo(function ImageCard({
+  item,
+  selected,
+  toggleSelect,
+}: {
+  item: SearchItem;
+  selected: boolean;
+  toggleSelect: (key: string) => void;
+}) {
+  const handleOpenImage = () => {
+    window.open(item.url, "_blank");
   };
 
   return (
@@ -39,16 +36,23 @@ const ImageCard = memo(function ImageCard({ item }: { item: SearchItem }) {
         alt={`Foto da busca`}
         fill
         sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
-        className="object-cover transition-all duration-300 group-hover:scale-110 group-hover:brightness-50"
+        className={`object-cover transition-all duration-300 group-hover:scale-110 group-hover:brightness-50 ${
+          selected ? "ring-4 ring-blue-500" : ""
+        }`}
       />
-      <a
-        href={item.url}
-        download={getOriginalFilename(item.key)}
-        title="Baixar esta foto"
-        className="absolute bottom-2 right-2 z-10 flex h-10 w-10 translate-y-14 items-center justify-center rounded-full bg-white/80 text-gray-800 opacity-0 shadow-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 hover:scale-110 hover:bg-white"
+      <input
+        type="checkbox"
+        checked={selected}
+        onChange={() => toggleSelect(item.key)}
+        className="absolute top-2 left-2 z-20 h-5 w-5 cursor-pointer accent-blue-500"
+      />
+      <button
+        onClick={handleOpenImage}
+        title="Abrir esta foto"
+        className="absolute bottom-2 right-2 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/80 text-gray-800 opacity-0 shadow-md transition-all duration-300 group-hover:opacity-100 hover:scale-110 hover:bg-white"
       >
         <ArrowDownTrayIcon className="h-6 w-6" />
-      </a>
+      </button>
     </div>
   );
 });
@@ -56,35 +60,70 @@ const ImageCard = memo(function ImageCard({ item }: { item: SearchItem }) {
 // --- Componente Principal da Página ---
 export default function ResultPage() {
   const params = useParams<{ slug?: string }>();
+  const router = useRouter();
   const [searchResult, setSearchResult] = useState<SearchOut | null>(null);
   const [displayItems, setDisplayItems] = useState<SearchItem[]>([]);
-  const [isZipping, setIsZipping] = useState(false);
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
   const loaderRef = useRef<HTMLDivElement | null>(null);
   const perPage = 24;
+  const INACTIVITY_TIME = 5 * 60 * 1000; // 5 minutos
+  const timeoutRef = useRef<number | undefined>(undefined);
+  const slug = params?.["slug"] as string;
+  // --- Inatividade e aba minimizada ---
+  useEffect(() => {
+    const resetTimer = () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      timeoutRef.current = window.setTimeout(() => {
+        router.push(`/login/${slug}`);
+      }, INACTIVITY_TIME);
+    };
 
-  // Carrega os resultados do localStorage e remove duplicatas
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        router.push(`/login/${slug}`);
+      } else {
+        resetTimer();
+      }
+    };
+
+    // Eventos de atividade
+    const events = [
+      "mousemove",
+      "mousedown",
+      "keypress",
+      "touchstart",
+      "scroll",
+    ];
+    events.forEach((event) => window.addEventListener(event, resetTimer));
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    // Inicializa o timer
+    resetTimer();
+
+    return () => {
+      events.forEach((event) => window.removeEventListener(event, resetTimer));
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
+
+  // --- Carrega resultados do localStorage ---
   useEffect(() => {
     const stored = localStorage.getItem("search_result");
     if (stored) {
       const result = JSON.parse(stored) as SearchOut;
-
-      // CORREÇÃO: Remove itens com chaves duplicadas
       const uniqueItems = Array.from(
         new Map(result.items.map((item) => [item.key, item])).values()
       );
 
-      const uniqueResult = {
-        ...result,
-        items: uniqueItems,
-        count: uniqueItems.length,
-      };
-
-      setSearchResult(uniqueResult);
-      setDisplayItems(uniqueResult.items.slice(0, perPage));
+      setSearchResult({ count: uniqueItems.length, items: uniqueItems });
+      setDisplayItems(uniqueItems.slice(0, perPage));
     }
   }, []);
 
-  // Lógica do scroll infinito corrigida para não recriar o observer
+  // --- Scroll infinito ---
   useEffect(() => {
     if (!searchResult) return;
 
@@ -93,14 +132,8 @@ export default function ResultPage() {
         const firstEntry = entries[0];
         if (firstEntry.isIntersecting) {
           setDisplayItems((prevItems) => {
-            if (prevItems.length >= searchResult.items.length) {
-              return prevItems;
-            }
-            const nextItems = searchResult.items.slice(
-              0,
-              prevItems.length + perPage
-            );
-            return nextItems;
+            if (prevItems.length >= searchResult.items.length) return prevItems;
+            return searchResult.items.slice(0, prevItems.length + perPage);
           });
         }
       },
@@ -108,45 +141,49 @@ export default function ResultPage() {
     );
 
     const currentLoader = loaderRef.current;
-    if (currentLoader) {
-      observer.observe(currentLoader);
-    }
+    if (currentLoader) observer.observe(currentLoader);
 
     return () => {
-      if (currentLoader) {
-        observer.unobserve(currentLoader);
-      }
+      if (currentLoader) observer.unobserve(currentLoader);
     };
-  }, [searchResult]); // Dependência estável, executa apenas quando os resultados mudam
+  }, [searchResult]);
 
-  const getOriginalFilename = (s3Key: string): string => {
-    const parts = s3Key.split("-");
-    if (parts.length > 2) {
-      return decodeURIComponent(parts.slice(2).join("-").replace(/_/g, " "));
-    }
-    return s3Key.split("/").pop() || "download.jpg";
+  // --- Seleção de fotos ---
+  const toggleSelect = (key: string) => {
+    setSelectedKeys((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(key)) newSet.delete(key);
+      else newSet.add(key);
+      return newSet;
+    });
   };
 
-  const downloadAllAsZip = async () => {
-    if (!searchResult || isZipping) return;
-    setIsZipping(true);
-    const zip = new JSZip();
-    const promises = searchResult.items.map(async (item) => {
+  // --- Download múltiplo ---
+  const downloadSelected = async () => {
+    if (!searchResult) return;
+
+    const selectedItems = searchResult.items.filter((item) =>
+      selectedKeys.has(item.key)
+    );
+
+    for (const item of selectedItems) {
       try {
         const response = await fetch(item.url);
         const blob = await response.blob();
-        const filename = getOriginalFilename(item.key);
-        zip.file(filename, blob);
-      } catch (error) {
-        console.error(`Falha ao baixar ${item.key}:`, error);
+        const url = window.URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = item.key; // pode ajustar para o filename que quiser
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+
+        window.URL.revokeObjectURL(url);
+      } catch (err) {
+        console.error("Erro ao baixar imagem:", err);
       }
-    });
-
-    await Promise.all(promises);
-
-    const content = await zip.generateAsync({ type: "blob" });
-    saveAs(content, `fotos-${params?.slug ?? "resultados"}.zip`);
-    setIsZipping(false);
+    }
   };
 
   if (!params?.slug) return <StateMessage message="Nenhuma busca informada." />;
@@ -163,23 +200,26 @@ export default function ResultPage() {
             {searchResult.count} foto{searchResult.count !== 1 ? "s" : ""}{" "}
             encontrada{searchResult.count !== 1 ? "s" : ""}
           </h1>
-          <button
-            onClick={downloadAllAsZip}
-            disabled={isZipping}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-400 sm:w-auto"
-          >
-            {isZipping ? (
-              <ArrowPathIcon className="h-5 w-5 animate-spin" />
-            ) : (
-              <ArchiveBoxArrowDownIcon className="h-5 w-5" />
-            )}
-            {isZipping ? "Compactando..." : "Baixar Todas (ZIP)"}
-          </button>
+
+          {selectedKeys.size > 0 && (
+            <button
+              onClick={downloadSelected}
+              className="flex items-center gap-2 rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+            >
+              <ArrowDownTrayIcon className="h-5 w-5" />
+              Baixar selecionadas ({selectedKeys.size})
+            </button>
+          )}
         </header>
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
           {displayItems.map((item) => (
-            <ImageCard key={item.key} item={item} />
+            <ImageCard
+              key={item.key}
+              item={item}
+              selected={selectedKeys.has(item.key)}
+              toggleSelect={toggleSelect}
+            />
           ))}
         </div>
 
@@ -193,7 +233,7 @@ export default function ResultPage() {
   );
 }
 
-// Componente auxiliar para mensagens de estado
+// --- Componente auxiliar para mensagens ---
 function StateMessage({
   message,
   showSpinner = false,

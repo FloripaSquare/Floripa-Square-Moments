@@ -3,36 +3,49 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import insert, select
 from passlib.hash import bcrypt
 from fastapi import HTTPException, status
-from app.schemas.user import users_table, UserCreate, AdminCreate
+from app.schemas.user import users_table, UserCreate, AdminCreate, UserRole
 from app.services.metrics import track
 
-# Usuário normal
+# -------------------------------
+# Função auxiliar para validar role
+# -------------------------------
+def validate_role(role: str) -> UserRole:
+    try:
+        return UserRole(role)  # tenta converter direto para enum
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Role inválida: {role}")
+# -------------------------------
+# Criar ou obter usuário normal
+# -------------------------------
 async def create_or_get_user(conn: AsyncSession, data: UserCreate):
     email = data.email.lower().strip()
     stmt = select(users_table).where(users_table.c.email == email)
     result = await conn.execute(stmt)
     existing = result.mappings().first()
+    
     if existing:
         return existing
+    
+    password_hash = bcrypt.hash(data.password)
+    role_enum = validate_role(data.role.value)
 
     stmt = (
         insert(users_table)
         .values(
             name=data.name,
             email=email,
+            password_hash=password_hash, 
             whatsapp=data.whatsapp,
             instagram=data.instagram,
             accepted_lgpd=data.accepted_lgpd,
             event_slug=data.event_slug,
-            is_admin=False,
+            role=role_enum,
         )
         .returning(users_table)
     )
-    result = await conn.execute(stmt)    
+    result = await conn.execute(stmt)
     row = result.mappings().first()
     
-    # --- AJUSTE A CHAMADA DA MÉTRICA AQUI ---
-    # Agora passamos também o event_slug que veio com os dados do usuário.
     if row:
         await track(
             conn,
@@ -40,11 +53,13 @@ async def create_or_get_user(conn: AsyncSession, data: UserCreate):
             user_id=str(row["id"]),
             event_slug=data.event_slug
         )
-        await conn.commit() # Salva o usuário e a métrica na mesma transação
+        await conn.commit()
         
     return row
 
-# Admin
+# -------------------------------
+# Criar usuário admin
+# -------------------------------
 async def create_admin_user(conn: AsyncSession, data: AdminCreate):
     email = data.email.lower().strip()
     stmt = select(users_table).where(users_table.c.email == email)
@@ -53,6 +68,8 @@ async def create_admin_user(conn: AsyncSession, data: AdminCreate):
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Um usuário com este e-mail já existe.")
 
     password_hash = bcrypt.hash(data.password)
+    role_enum = UserRole.ADMIN  # enum direto
+
     stmt = (
         insert(users_table)
         .values(
@@ -61,13 +78,13 @@ async def create_admin_user(conn: AsyncSession, data: AdminCreate):
             whatsapp=data.whatsapp,
             instagram=data.instagram,
             accepted_lgpd=data.accepted_lgpd,
-            is_admin=True,
             password_hash=password_hash,
+            role=role_enum,
+            event_slug=data.event_slug,
         )
         .returning(users_table)
     )
     result = await conn.execute(stmt)
-    await conn.commit()
     row = result.mappings().first()
     
     if row:
@@ -76,7 +93,9 @@ async def create_admin_user(conn: AsyncSession, data: AdminCreate):
 
     return row
 
+# -------------------------------
 # Autenticação
+# -------------------------------
 async def authenticate_user(conn: AsyncSession, email: str, password: str):
     stmt = select(users_table).where(users_table.c.email == email.lower().strip())
     result = await conn.execute(stmt)

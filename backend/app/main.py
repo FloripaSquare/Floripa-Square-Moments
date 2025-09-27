@@ -13,7 +13,7 @@ from app.services.db import engine, async_session_maker, init_db
 from app.errors import botocore_error_handler, generic_error_handler
 from botocore.exceptions import BotoCoreError, ClientError
 
-from app.routes import health, events, ingest, search, admin, privacy, users, metrics, auth, uploads, sessions
+from app.routes import health, events, ingest, search, admin, privacy, users, metrics, auth, uploads, sessions, users_me
 from app.schemas.session import active_sessions_table
 from app.security.jwt import SECRET_KEY, ALGORITHM
 
@@ -87,6 +87,8 @@ api_router.include_router(privacy.router, prefix="/privacy", tags=["Privacy"])
 api_router.include_router(ingest.router, prefix="/ingest", tags=["Ingest"])
 api_router.include_router(uploads.router, prefix="/uploads", tags=["Uploads"])
 api_router.include_router(users.router, prefix="/users", tags=["Users"])
+app.include_router(users_me.router, prefix="/users", tags=["Users Me"])
+
 
 # Rotas de Administração
 admin_router = APIRouter(prefix="/admin")

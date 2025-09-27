@@ -19,6 +19,6 @@ async def get_metrics(conn: AsyncSession, user_id: Optional[str] = None):
     return result.mappings().all()
 
 # Função auxiliar para registrar a métrica
-async def track(conn: AsyncSession, action: str, user_id: Optional[str] = None, event_slug: Optional[str] = None):
-    metric_payload = MetricIn(user_id=user_id, event_slug=event_slug, type=action)
+async def track(conn: AsyncSession, action: str, user_id: Optional[str] = None, event_slug: Optional[str] = None, data: Optional[dict] = None):
+    metric_payload = MetricIn(user_id=user_id, event_slug=event_slug, type=action, data=data)
     await add_metric(conn, metric_payload)

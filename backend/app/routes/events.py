@@ -8,9 +8,7 @@ from app.services.events import list_events
 from typing import List
 router = APIRouter()
 
-@router.post("/", response_model=EventOut)
-async def create_event(payload: CreateEventIn, conn: AsyncSession = Depends(get_conn)):
-    return await create_event_service(conn, payload)
+
 
 
 @router.get("/{slug}", response_model=EventOut)

@@ -71,7 +71,7 @@ export default function ResultPage() {
 
   if (!eventSlug) {
     return (
-      <main className="min-h-screen w-full items-center justify-center bg-gray-50">
+      <main className="min-h-screen w-full items-center justify-center bg-gray-50 flex">
         <div className="text-center">
           <p className="mt-2 text-gray-600">
             O slug do evento não foi encontrado.
@@ -83,29 +83,25 @@ export default function ResultPage() {
 
   return (
     <main className="min-h-screen bg-gray-50 p-6" ref={containerRef}>
-      <h1 className="text-2xl font-bold mb-4">
+      <h1 className="text-2xl font-bold mb-2">
         Fotos encontradas no evento {eventSlug}
       </h1>
 
+      <p className="text-gray-600 text-sm mb-4 text-center">
+        Para baixar uma foto, basta clicar nela
+      </p>
+
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
         {items.map((item, i) => (
-          <div key={i} className="relative group">
-            <a href={item.url} target="_blank" rel="noopener noreferrer">
-              <Image
-                src={item.url}
-                alt={`foto-${i}`}
-                width={300}
-                height={300}
-                className="rounded-xl shadow object-cover w-full h-full"
-              />
-            </a>
-            <button
-              type="button"
+          <div key={i} className="relative group cursor-pointer">
+            <Image
+              src={item.url}
+              alt={`foto-${i}`}
+              width={300}
+              height={300}
+              className="rounded-xl shadow object-cover w-full h-full"
               onClick={() => downloadFile(item.url)}
-              className="absolute bottom-2 right-2 bg-blue-600 text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition"
-            >
-              Baixar
-            </button>
+            />
           </div>
         ))}
       </div>
@@ -113,7 +109,7 @@ export default function ResultPage() {
       {loading && <p className="text-center mt-4">Carregando...</p>}
 
       {items.length > 0 && (
-        <div className="mt-6">
+        <div className="mt-6 text-center">
           <a
             href={`/api/search/${eventSlug}/download`}
             target="_blank"

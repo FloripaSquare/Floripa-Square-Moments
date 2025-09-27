@@ -1,27 +1,53 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 
 export default function SlugPage() {
+  const router = useRouter();
   const params = useParams();
   const slug = params?.["slug"] as string;
-  const router = useRouter();
+
+  const buttonStyle = {
+    width: "220px",
+    height: "50px",
+    borderRadius: "8px",
+    fontWeight: 600,
+    textTransform: "uppercase" as const,
+    transition: "all 0.3s ease",
+  };
 
   return (
     <main className="relative w-full h-screen text-white">
-      {/* Imagem de fundo */}
       <div
         className="absolute inset-0 bg-cover bg-center"
         style={{ backgroundImage: "url('/bg-helisul.png')" }}
       />
 
-      {/* Conteúdo centralizado */}
-      <div className="relative z-10 flex flex-col items-center justify-center w-full h-full text-center px-6">
+      <div className="relative z-10 flex flex-col items-center justify-center w-full h-full text-center px-6 gap-4 pt-40">
+        {/* Botão de Cadastro (borda branca) */}
         <button
-          className="px-6 py-3 border-2 border-white rounded-md text-white font-semibold tracking-wide uppercase hover:bg-white hover:text-blue-900 transition transform translate-y-25"
+          style={{
+            ...buttonStyle,
+            backgroundColor: "transparent",
+            color: "white",
+            border: "2px solid white",
+          }}
           onClick={() => router.push(`/register/${slug}`)}
         >
-          Encontre sua foto
+          Cadastrar
+        </button>
+
+        {/* Botão de Login (azul claro) */}
+        <button
+          style={{
+            ...buttonStyle,
+            backgroundColor: "rgb(12, 212, 255)",
+            color: "rgb(10, 0, 127)",
+            border: "none",
+          }}
+          onClick={() => router.push(`/login/${slug}`)}
+        >
+          Login
         </button>
       </div>
     </main>
