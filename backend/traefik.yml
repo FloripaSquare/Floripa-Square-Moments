@@ -1,10 +1,3 @@
-log:
-  level: INFO
-
-api:
-  dashboard: true
-  insecure: false
-
 entryPoints:
   web:
     address: ":80"
@@ -22,18 +15,3 @@ certificatesResolvers:
       storage: /letsencrypt/acme.json
       httpChallenge:
         entryPoint: web
-
-http:
-  routers:
-    http-catchall:
-      rule: "HostRegexp(`{host:.+}`)"
-      entryPoints:
-        - web
-      middlewares:
-        - redirect-to-https
-
-  middlewares:
-    redirect-to-https:
-      redirectScheme:
-        scheme: https
-        permanent: true

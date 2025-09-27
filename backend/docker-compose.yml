@@ -1,6 +1,11 @@
 version: "3.9"
 
+networks:
+  app-network:
+    driver: bridge
+
 services:
+  # ===== BACKEND =====
   backend:
     build: .
     container_name: moments-backend
@@ -10,13 +15,14 @@ services:
       - app-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.backend.rule=Host(`moments.floripasquare.com.br`)"
+      - "traefik.http.routers.backend.rule=Host(`api.moments-floripasquare.com.br`)"
       - "traefik.http.routers.backend.entrypoints=websecure"
       - "traefik.http.routers.backend.tls=true"
       - "traefik.http.routers.backend.tls.certresolver=myresolver"
     expose:
       - "8080"
 
+  # ===== TRAEFIK =====
   traefik:
     image: traefik:v2.10
     container_name: traefik
@@ -31,6 +37,7 @@ services:
     networks:
       - app-network
 
+  # ===== PROMETHEUS =====
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
@@ -42,6 +49,7 @@ services:
       - app-network
     restart: unless-stopped
 
+  # ===== GRAFANA =====
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
@@ -52,7 +60,3 @@ services:
     depends_on:
       - prometheus
     restart: unless-stopped
-
-networks:
-  app-network:
-    driver: bridge
