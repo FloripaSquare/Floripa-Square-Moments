@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import UploadPhotosForm from "@/components/events/UploadPhotosForm";
+import Footer from "@/components/Footer";
 
 interface UserData {
   id: string;
@@ -98,6 +99,7 @@ export default function PhotographerPanel() {
           />
         </section>
       </div>
+      <Footer />
     </main>
   );
 }

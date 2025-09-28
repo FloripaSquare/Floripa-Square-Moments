@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter, useParams } from "next/navigation";
+import Footer from "@/components/Footer";
 
 export default function UserLoginPage() {
   const router = useRouter();
@@ -110,6 +111,7 @@ export default function UserLoginPage() {
           </button>
         </form>
       </div>
+      <Footer />
     </main>
   );
 }

@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useState, useRef, useCallback } from "react";
 import type { SearchOut, ItemUrl } from "@/lib/types";
 import Image from "next/image";
+import Footer from "@/components/Footer";
 
 export default function ResultPage() {
   const params = useParams<{ slug?: string }>();
@@ -119,6 +120,7 @@ export default function ResultPage() {
           </a>
         </div>
       )}
+      <Footer />
     </main>
   );
 }

@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
+import Footer from "@/components/Footer";
 
 export default function SelfiePage() {
   const router = useRouter();
@@ -17,12 +18,22 @@ export default function SelfiePage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const surveyUrl = process.env.NEXT_PUBLIC_SURVEY_URL || "/";
-
   useEffect(() => {
     const token = localStorage.getItem("user_token");
     if (!token) router.push(`/login/${slug}`);
   }, [router, slug]);
+
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        setUseCamera(true);
+      }
+    } catch (err) {
+      alert("Erro ao acessar a câmera. Verifique as permissões.");
+    }
+  };
 
   const stopCamera = () => {
     (videoRef.current?.srcObject as MediaStream)
@@ -50,13 +61,8 @@ export default function SelfiePage() {
     }, "image/jpeg");
   };
 
-  const handleFileChange = (file: File) => {
-    setSelfie(file);
-    setSelfiePreview(URL.createObjectURL(file));
-  };
-
   const handleSubmit = async () => {
-    if (!selfie) return alert("Tire ou selecione uma selfie antes.");
+    if (!selfie) return alert("Tire uma selfie antes.");
 
     setLoading(true);
     try {
@@ -86,10 +92,10 @@ export default function SelfiePage() {
   };
 
   const buttonClasses =
-    "w-full max-w-xs px-4 py-3 rounded-md font-semibold uppercase text-center transition duration-200 ease-in-out";
+    "w-full max-w-xs px-2 py-2 rounded-md font-semibold uppercase text-center transition duration-200 ease-in-out";
 
   return (
-    <main className="relative w-full h-screen flex items-center justify-center">
+    <main className="relative w-full min-h-screen flex flex-col justify-center items-center">
       {/* Background */}
       <div
         className="absolute inset-0 bg-cover bg-center"
@@ -101,23 +107,37 @@ export default function SelfiePage() {
       />
 
       {/* Conteúdo */}
-      <div className="relative z-10 flex flex-col items-center justify-center w-full h-full text-center gap-4 px-4">
+      <div className="relative z-10 flex flex-col items-center w-80 px-4 gap-6">
+        {/* Texto de introdução */}
+        <div
+          className="text-white max-w-2xl text-center"
+          style={{ textShadow: "0 0 5px rgba(0,0,0,0.7)" }}
+        >
+          <p className="font-semibold text-lg">
+            Olá, que bom que você está no Rooftop Floripa Square.
+          </p>
+          <p className="mt-2 text-sm">
+            Esta é a sua galeria oficial de fotos no evento, para que você
+            compartilhe com suas redes sociais conteúdos, momentos e insights.
+          </p>
+          <p className="mt-2 text-sm font-medium">
+            Para começar, tire uma selfie e depois clique no botão{" "}
+            <strong>ENVIAR & BUSCAR FOTOS</strong>.
+          </p>
+        </div>
+
+        {/* Botão para abrir câmera */}
         {!selfiePreview && !useCamera && (
-          <label
-            className={`${buttonClasses} border-2 border-white text-white cursor-pointer hover:bg-white hover:text-blue-900`}
+          <button
+            type="button"
+            className={`${buttonClasses} border-2 border-white text-white cursor-pointer hover:bg-white hover:text-blue-900 text-sm`}
+            onClick={startCamera}
           >
-            Selecionar da galeria
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                if (e.target.files?.[0]) handleFileChange(e.target.files[0]);
-              }}
-            />
-          </label>
+            TIRAR SELFIE
+          </button>
         )}
 
+        {/* Câmera */}
         {useCamera && (
           <div className="flex flex-col items-center gap-2">
             <video
@@ -147,6 +167,7 @@ export default function SelfiePage() {
           </div>
         )}
 
+        {/* Preview da selfie */}
         {selfiePreview && (
           <div className="flex flex-col items-center gap-2">
             <Image
@@ -157,6 +178,16 @@ export default function SelfiePage() {
               className="rounded-md border-2 border-white cursor-pointer shadow-md"
               onClick={() => window.open(selfiePreview, "_blank")}
             />
+            {/* Texto importante vai abaixo da selfie */}
+            <span
+              className="text-white font-semibold text-xs text-center mt-2"
+              style={{ textShadow: "0 0 5px rgba(0,0,0,0.7)" }}
+            >
+              <strong className="text-sm">Importante:</strong>
+              <br />
+              Por motivos de privacidade, não armazenaremos sua selfie. Salve
+              uma ou tire a cada vez que for buscar por fotos.
+            </span>
             <button
               type="button"
               className={`${buttonClasses} border-2 border-white text-white hover:bg-white hover:text-blue-900`}
@@ -165,13 +196,14 @@ export default function SelfiePage() {
                 setSelfiePreview(null);
               }}
             >
-              Trocar foto
+              Tirar outra selfie
             </button>
           </div>
         )}
 
         <canvas ref={canvasRef} className="hidden" />
 
+        {/* Botão de enviar */}
         <button
           onClick={handleSubmit}
           disabled={loading}
@@ -179,14 +211,9 @@ export default function SelfiePage() {
         >
           {loading ? "Enviando..." : "Enviar & Buscar Fotos"}
         </button>
-
-        <button
-          onClick={() => router.push(surveyUrl)}
-          className={`${buttonClasses} border-2 border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-blue-900`}
-        >
-          Pesquisa de Satisfação
-        </button>
       </div>
+            <Footer />
+      
     </main>
   );
 }

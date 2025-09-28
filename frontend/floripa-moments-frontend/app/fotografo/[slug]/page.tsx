@@ -6,6 +6,7 @@ import {
   ExclamationCircleIcon,
   CheckCircleIcon,
 } from "@heroicons/react/24/solid";
+import Footer from "@/components/Footer";
 
 export default function PhotographerLogin() {
   const router = useRouter();
@@ -117,6 +118,7 @@ export default function PhotographerLogin() {
           </button>
         </form>
       </div>
+      <Footer />
     </main>
   );
 }

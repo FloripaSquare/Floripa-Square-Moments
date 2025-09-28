@@ -1,5 +1,6 @@
 "use client";
 
+import Footer from "@/components/Footer";
 import { useRouter, useParams } from "next/navigation";
 
 export default function SlugPage() {
@@ -15,6 +16,9 @@ export default function SlugPage() {
     textTransform: "uppercase" as const,
     transition: "all 0.3s ease",
   };
+
+  const buttonClasses =
+    "w-full max-w-xs px-2 py-2 rounded-md font-semibold uppercase text-center transition duration-200 ease-in-out";
 
   return (
     <main className="relative w-full h-screen text-white">
@@ -49,7 +53,14 @@ export default function SlugPage() {
         >
           Login
         </button>
+        <button
+          onClick={() => router.push(`/${slug}/pesquisa`)}
+          className={`${buttonClasses} border-2 border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-blue-900`}
+        >
+          Pesquisa de Satisfação
+        </button>
       </div>
+      <Footer />
     </main>
   );
 }

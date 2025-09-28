@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState, useRef, memo } from "react";
 import Image from "next/image";
 import { ArrowDownTrayIcon, ArrowPathIcon } from "@heroicons/react/24/solid";
+import Footer from "@/components/Footer";
 
 // --- Tipos ---
 type SearchItem = {
@@ -233,6 +234,7 @@ export default function ResultPage() {
           )}
         </div>
       </div>
+      <Footer />
     </main>
   );
 }
