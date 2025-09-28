@@ -24,6 +24,12 @@ users_table = Table(
     Column("whatsapp", String, nullable=True),
     Column("instagram", String, nullable=True),
     Column("accepted_lgpd", Boolean, default=False, nullable=False),
+    Column("biometric_acceptance", Boolean, default=False, nullable=False),
+    Column("international_transfer_data", Boolean, default=False, nullable=False),
+    Column("image_usage_portifolio", Boolean, default=False, nullable=False),
+    Column("marketing_communication_usage", Boolean, default=False, nullable=False),
+    Column("age_declaration", Boolean, default=False, nullable=False),
+    Column("responsible_consent", Boolean, default=False, nullable=True),
     Column("event_slug", String, nullable=True),
     Column("role", Enum(UserRole, name="user_roles"), nullable=False, default=UserRole.USER),
 )
@@ -40,6 +46,12 @@ class UserCreate(UserBase):
     password: str
     role: UserRole = UserRole.USER
     accepted_lgpd: bool = True
+    biometric_acceptance: bool = True
+    international_transfer_data: bool = True
+    image_usage_portifolio: bool = True
+    marketing_communication_usage: bool = True
+    age_declaration: bool = True
+    responsible_consent: bool = True
 
 class UserOut(BaseModel):
     id: str
@@ -60,3 +72,10 @@ class AdminCreate(UserBase):
     password: str
     role: UserRole = UserRole.ADMIN
     accepted_lgpd: bool = True
+    biometric_acceptance: bool = True
+    international_transfer_data: bool = True
+    image_usage_portifolio: bool = True
+    marketing_communication_usage: bool = True
+    age_declaration: bool = True
+    responsible_consent: bool = True
+    

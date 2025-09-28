@@ -50,6 +50,12 @@ async def get_user_by_id(user_id: str, conn: AsyncSession = Depends(get_conn)):
             users_table.c.whatsapp,
             users_table.c.instagram,
             users_table.c.accepted_lgpd,
+            users_table.c.biometric_acceptance,
+            users_table.c.international_transfer_data,
+            users_table.c.image_usage_portifolio,
+            users_table.c.marketing_communication_usage,
+            users_table.c.age_declaration,
+            users_table.c.responsible_consent,
             users_table.c.event_slug,
             users_table.c.role
         ).where(users_table.c.id == uuid_obj)
