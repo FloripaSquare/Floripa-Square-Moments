@@ -57,68 +57,70 @@ export default function PhotographerLogin() {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gray-100 p-4">
-      <div className="w-full max-w-md bg-white p-6 rounded-md shadow-md">
-        <h1 className="text-2xl font-bold mb-6 text-center text-gray-900">
-          Login do Fotógrafo
-        </h1>
+    <>
+      <main className="flex min-h-screen items-center justify-center bg-gray-100 p-4">
+        <div className="w-full max-w-md bg-white p-6 rounded-md shadow-md">
+          <h1 className="text-2xl font-bold mb-6 text-center text-gray-900">
+            Login do Fotógrafo
+          </h1>
 
-        {alert && (
-          <div
-            className={`flex items-center p-3 mb-4 rounded-md text-sm ${
-              alert.type === "error"
-                ? "bg-red-50 text-red-800"
-                : "bg-green-50 text-green-800"
-            }`}
-          >
-            {alert.type === "error" ? (
-              <ExclamationCircleIcon className="h-5 w-5 mr-2" />
-            ) : (
-              <CheckCircleIcon className="h-5 w-5 mr-2" />
-            )}
-            <span>{alert.message}</span>
-          </div>
-        )}
+          {alert && (
+            <div
+              className={`flex items-center p-3 mb-4 rounded-md text-sm ${
+                alert.type === "error"
+                  ? "bg-red-50 text-red-800"
+                  : "bg-green-50 text-green-800"
+              }`}
+            >
+              {alert.type === "error" ? (
+                <ExclamationCircleIcon className="h-5 w-5 mr-2" />
+              ) : (
+                <CheckCircleIcon className="h-5 w-5 mr-2" />
+              )}
+              <span>{alert.message}</span>
+            </div>
+          )}
 
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-900 mb-1">
-              Email Profissional
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="mt-1 block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm bg-gray-50 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
-              placeholder="seuemail@empresa.com"
-            />
-          </div>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-900 mb-1">
+                Email Profissional
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="mt-1 block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm bg-gray-50 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+                placeholder="seuemail@empresa.com"
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-900 mb-1">
-              Senha
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="mt-1 block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm bg-gray-50 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
-              placeholder="********"
-            />
-          </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-900 mb-1">
+                Senha
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="mt-1 block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm bg-gray-50 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+                placeholder="********"
+              />
+            </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full flex justify-center items-center py-2 px-4 bg-blue-700 text-white font-semibold rounded-md shadow-sm hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? "Entrando..." : "Entrar"}
-          </button>
-        </form>
-      </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full flex justify-center items-center py-2 px-4 bg-blue-700 text-white font-semibold rounded-md shadow-sm hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? "Entrando..." : "Entrar"}
+            </button>
+          </form>
+        </div>
+      </main>
       <Footer />
-    </main>
+    </>
   );
 }
