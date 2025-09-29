@@ -114,7 +114,7 @@ export default function SelfiePage() {
               onClick={() => window.open(selfiePreview, "_blank")}
             />
 
-            <p className="text-white text-sm max-w-xs text-center">
+            <p className="text-white text-[8px] font-semibold max-w-[15rem] text-center leading-relaxed">
               Importante: por motivos de privacidade, não armazenaremos sua
               selfie. Salve uma ou tire uma a cada vez que for buscar por fotos.
             </p>
@@ -141,6 +141,13 @@ export default function SelfiePage() {
           className={`${buttonClasses} border-2 border-white text-white hover:bg-white hover:text-blue-900 disabled:opacity-50`}
         >
           {loading ? "Enviando..." : "Enviar & Buscar Fotos"}
+        </button>
+        <button
+          type="button"
+          className={`${buttonClasses} border-2 border-white text-white hover:bg-white hover:text-blue-900`}
+          onClick={() => router.push(`/${slug}/pesquisa`)}
+        >
+          Pesquisa de Satisfação
         </button>
       </div>
     </main>

@@ -209,143 +209,149 @@ export default function RegisterPage() {
   };
 
   return (
-    <main
-      className="min-h-screen flex flex-col items-center justify-center p-4 bg-cover bg-center"
-      style={{ backgroundImage: "url('/bg-form.png')" }}
-    >
-      <form
-        className="w-full max-w-md shadow-2xl rounded-xl p-8 space-y-4 border-2 border-blue-100 bg-white/90 overflow-y-auto max-h-[90vh]"
-        onSubmit={handleSubmit}
+    <>
+      <main
+        className="min-h-screen flex flex-col items-center justify-center p-4 bg-cover bg-center"
+        style={{ backgroundImage: "url('/bg-form.png')" }}
       >
-        <h1 className="text-3xl font-extrabold text-center text-blue-800 mb-6">
-          Novo Cadastro
-        </h1>
-
-        {/* Inputs principais */}
-        <input
-          type="text"
-          placeholder="Nome"
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-          className={inputClass}
-          required
-        />
-        <input
-          type="text"
-          placeholder="Sobrenome"
-          value={form.last_name}
-          onChange={(e) => setForm({ ...form, last_name: e.target.value })}
-          className={inputClass}
-          required
-        />
-        <input
-          type="email"
-          placeholder="Email"
-          value={form.email}
-          onChange={(e) => setForm({ ...form, email: e.target.value })}
-          className={inputClass}
-          required
-        />
-        <input
-          type="password"
-          placeholder="Senha"
-          value={form.password}
-          onChange={(e) => setForm({ ...form, password: e.target.value })}
-          className={inputClass}
-          required
-        />
-        <input
-          type="password"
-          placeholder="Confirme a senha"
-          value={form.confirm_password}
-          onChange={(e) =>
-            setForm({ ...form, confirm_password: e.target.value })
-          }
-          className={inputClass}
-          required
-        />
-        <input
-          type="tel"
-          placeholder="WhatsApp"
-          value={form.whatsapp}
-          onChange={handleWhatsappChange}
-          maxLength={15}
-          className={inputClass}
-        />
-        <input
-          type="text"
-          placeholder="Instagram (@seuperfil)"
-          value={form.instagram}
-          onChange={(e) => setForm({ ...form, instagram: e.target.value })}
-          className={inputClass}
-        />
-        {/* Botão Políticas de Privacidade */}
-
-        {/* Carrossel de consentimento */}
-        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 text-gray-900 text-sm space-y-4">
-          <h2 className="text-base font-bold text-center text-blue-900">
-            Termo de Consentimento - Plataforma “Moments”
-          </h2>
-
-          {visibleItems().map((item) => (
-            <Checkbox
-              key={item.key}
-              checked={!!form[item.key]}
-              onChange={() => handleCheckboxChange(item.key)}
-              title={item.title}
-              description={item.description}
-              required={item.required}
-            />
-          ))}
-
-          {/* Dots de progresso */}
-          <div className="flex justify-center gap-2 mt-3">{progressDots()}</div>
-        </div>
-
-        {/* Botões */}
-        <a
-          href={`/${slug}/privacy-politcs`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block text-center text-sm text-blue-700 mb-2 text-decoration-underline"
+        <form
+          className="w-full max-w-md shadow-2xl rounded-xl p-8 space-y-4 border-2 border-blue-100 bg-white/90 overflow-y-auto max-h-[90vh]"
+          onSubmit={handleSubmit}
         >
-          Políticas de Privacidade
-        </a>
-        <a
-          href={`/${slug}/terms`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block text-center text-sm text-blue-700 mb-2 text-decoration-underline"
-        >
-          Termos e Condições de Uso
-        </a>
-        <button
-          type="submit"
-          className="w-full text-white py-3 rounded-lg font-semibold shadow-md transition duration-200 ease-in-out bg-blue-700 hover:bg-blue-800 disabled:bg-blue-400"
-          disabled={loading}
-        >
-          {loading ? "Enviando..." : "Finalizar Cadastro"}
-        </button>
-        <button
-          type="button"
-          onClick={() => router.push(`/login/${slug}`)}
-          className="w-full py-3 rounded-lg font-semibold shadow-md bg-blue-100 text-blue-800 hover:bg-blue-200"
-        >
-          Já tenho cadastro
-        </button>
+          <h1 className="text-3xl font-extrabold text-center text-blue-800 mb-6">
+            Novo Cadastro
+          </h1>
 
-        {msg && (
-          <p
-            className={`mt-2 text-center text-sm font-medium p-2 rounded ${
-              msg.ok ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-            }`}
+          {/* Inputs principais */}
+          <input
+            type="text"
+            placeholder="Nome"
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            className={inputClass}
+            required
+          />
+          <input
+            type="text"
+            placeholder="Sobrenome"
+            value={form.last_name}
+            onChange={(e) => setForm({ ...form, last_name: e.target.value })}
+            className={inputClass}
+            required
+          />
+          <input
+            type="email"
+            placeholder="Email"
+            value={form.email}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+            className={inputClass}
+            required
+          />
+          <input
+            type="password"
+            placeholder="Senha"
+            value={form.password}
+            onChange={(e) => setForm({ ...form, password: e.target.value })}
+            className={inputClass}
+            required
+          />
+          <input
+            type="password"
+            placeholder="Confirme a senha"
+            value={form.confirm_password}
+            onChange={(e) =>
+              setForm({ ...form, confirm_password: e.target.value })
+            }
+            className={inputClass}
+            required
+          />
+          <input
+            type="tel"
+            placeholder="WhatsApp"
+            value={form.whatsapp}
+            onChange={handleWhatsappChange}
+            maxLength={15}
+            className={inputClass}
+          />
+          <input
+            type="text"
+            placeholder="Instagram (@seuperfil)"
+            value={form.instagram}
+            onChange={(e) => setForm({ ...form, instagram: e.target.value })}
+            className={inputClass}
+          />
+          {/* Botão Políticas de Privacidade */}
+
+          {/* Carrossel de consentimento */}
+          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 text-gray-900 text-sm space-y-4">
+            <h2 className="text-base font-bold text-center text-blue-900">
+              Termo de Consentimento - Plataforma “Moments”
+            </h2>
+
+            {visibleItems().map((item) => (
+              <Checkbox
+                key={item.key}
+                checked={!!form[item.key]}
+                onChange={() => handleCheckboxChange(item.key)}
+                title={item.title}
+                description={item.description}
+                required={item.required}
+              />
+            ))}
+
+            {/* Dots de progresso */}
+            <div className="flex justify-center gap-2 mt-3">
+              {progressDots()}
+            </div>
+          </div>
+
+          {/* Botões */}
+          <a
+            href={`/${slug}/privacy-politcs`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block text-center text-sm text-blue-700 mb-2 text-decoration-underline"
           >
-            {msg.text}
-          </p>
-        )}
-      </form>
+            Políticas de Privacidade
+          </a>
+          <a
+            href={`/${slug}/terms`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block text-center text-sm text-blue-700 mb-2 text-decoration-underline"
+          >
+            Termos e Condições de Uso
+          </a>
+          <button
+            type="submit"
+            className="w-full text-white py-3 rounded-lg font-semibold shadow-md transition duration-200 ease-in-out bg-blue-700 hover:bg-blue-800 disabled:bg-blue-400"
+            disabled={loading}
+          >
+            {loading ? "Enviando..." : "Finalizar Cadastro"}
+          </button>
+          <button
+            type="button"
+            onClick={() => router.push(`/login/${slug}`)}
+            className="w-full py-3 rounded-lg font-semibold shadow-md bg-blue-100 text-blue-800 hover:bg-blue-200"
+          >
+            Já tenho cadastro
+          </button>
+
+          {msg && (
+            <p
+              className={`mt-2 text-center text-sm font-medium p-2 rounded ${
+                msg.ok
+                  ? "bg-green-100 text-green-700"
+                  : "bg-red-100 text-red-700"
+              }`}
+            >
+              {msg.text}
+            </p>
+          )}
+        </form>
+      </main>
       <Footer />
-    </main>
+    </>
   );
 }
 
