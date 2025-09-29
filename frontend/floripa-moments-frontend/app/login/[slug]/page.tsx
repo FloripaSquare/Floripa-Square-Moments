@@ -52,66 +52,68 @@ export default function UserLoginPage() {
   };
 
   return (
-    <main
-      className="min-h-screen flex flex-col items-center justify-center p-8 bg-cover bg-center"
-      style={{ backgroundImage: "url('/bg-form.png')" }}
-    >
-      <div className="w-full max-w-md p-6 rounded-md">
-        <h1 className="text-2xl font-bold mb-6 text-center text-white-800">
-          Login
-        </h1>
+    <>
+      <main
+        className="min-h-screen flex flex-col items-center justify-center p-8 bg-cover bg-center"
+        style={{ backgroundImage: "url('/bg-form.png')" }}
+      >
+        <div className="w-full max-w-md p-6 rounded-md">
+          <h1 className="text-2xl font-bold mb-6 text-center text-white-800">
+            Login
+          </h1>
 
-        {alert && (
-          <div
-            className={`flex items-center p-3 mb-4 rounded-md text-sm ${
-              alert.type === "error"
-                ? "bg-red-50 text-red-700"
-                : "bg-green-50 text-green-700"
-            }`}
-          >
-            <span>{alert.message}</span>
-          </div>
-        )}
+          {alert && (
+            <div
+              className={`flex items-center p-3 mb-4 rounded-md text-sm ${
+                alert.type === "error"
+                  ? "bg-red-50 text-red-700"
+                  : "bg-green-50 text-green-700"
+              }`}
+            >
+              <span>{alert.message}</span>
+            </div>
+          )}
 
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label className="block text-sm font-bold text-white-700 mb-1">
-              Email
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              placeholder="seu@email.com"
-              className="w-full bg-gray-100 border border-gray-400 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-400 focus:outline-none"
-            />
-          </div>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="block text-sm font-bold text-white-700 mb-1">
+                Email
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                placeholder="seu@email.com"
+                className="w-full bg-gray-100 border border-gray-400 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-400 focus:outline-none"
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-bold text-white-700 mb-1">
-              Senha
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              placeholder="********"
-              className="w-full bg-gray-100 border border-gray-400 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-400 focus:outline-none"
-            />
-          </div>
+            <div>
+              <label className="block text-sm font-bold text-white-700 mb-1">
+                Senha
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                placeholder="********"
+                className="w-full bg-gray-100 border border-gray-400 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-400 focus:outline-none"
+              />
+            </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full flex justify-center items-center py-2 px-4 bg-blue-600 text-white font-semibold "
-          >
-            {loading ? "Entrando..." : "Entrar"}
-          </button>
-        </form>
-      </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full flex justify-center items-center py-2 px-4 bg-blue-600 text-white font-semibold "
+            >
+              {loading ? "Entrando..." : "Entrar"}
+            </button>
+          </form>
+        </div>
+      </main>
       <Footer />
-    </main>
+    </>
   );
 }

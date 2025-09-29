@@ -54,8 +54,14 @@ export default function SlugPage() {
           Login
         </button>
         <button
+          style={{
+            ...buttonStyle,
+            border: "1px solid white",
+            backgroundColor: "transparent",
+            color: "white",
+            fontSize: "14px",
+          }}
           onClick={() => router.push(`/${slug}/pesquisa`)}
-          className={`${buttonClasses} border-2 border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-blue-900`}
         >
           Pesquisa de Satisfação
         </button>
