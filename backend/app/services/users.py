@@ -34,6 +34,7 @@ async def create_or_get_user(conn: AsyncSession, data: UserCreate):
         .values(
             name=data.name,
             email=email,
+            last_name=data.last_name,
             password_hash=password_hash, 
             whatsapp=data.whatsapp,
             instagram=data.instagram,
@@ -80,6 +81,7 @@ async def create_admin_user(conn: AsyncSession, data: AdminCreate):
         insert(users_table)
         .values(
             name=data.name,
+            last_name=data.last_name,
             email=email,
             whatsapp=data.whatsapp,
             instagram=data.instagram,

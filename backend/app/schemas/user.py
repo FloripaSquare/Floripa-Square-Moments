@@ -37,6 +37,7 @@ users_table = Table(
 # Schemas Pydantic
 class UserBase(BaseModel):
     name: str
+    last_name: Optional[str] = None
     email: EmailStr
     whatsapp: Optional[str] = None
     instagram: Optional[str] = None

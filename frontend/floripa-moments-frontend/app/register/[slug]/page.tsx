@@ -273,13 +273,24 @@ export default function RegisterPage() {
             maxLength={15}
             className={inputClass}
           />
-          <input
-            type="text"
-            placeholder="Instagram (@seuperfil)"
-            value={form.instagram}
-            onChange={(e) => setForm({ ...form, instagram: e.target.value })}
-            className={inputClass}
-          />
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+              @
+            </span>
+            <input
+              type="text"
+              placeholder="seuperfil"
+              value={form.instagram.replace(/^@/, "")}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  instagram: "@" + e.target.value.replace(/^@/, ""),
+                })
+              }
+              className={`${inputClass} pl-7`} // espaço pro @
+            />
+          </div>
+
           {/* Botão Políticas de Privacidade */}
 
           {/* Carrossel de consentimento */}
