@@ -84,7 +84,7 @@ async def require_any_user(token: str = Depends(oauth2_scheme), conn: AsyncSessi
         if user_id is None or jti is None or role is None:
             raise credentials_exception
 
-        if role not in [UserRole.USER, UserRole.PHOTOGRAPHER]:
+        if role not in [UserRole.USER, UserRole.PHOTOGRAPHER, UserRole.ADMIN]:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permissão negada")
 
         # Verifica denylist

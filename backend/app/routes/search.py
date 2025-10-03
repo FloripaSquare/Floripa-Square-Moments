@@ -7,7 +7,7 @@ from app.schemas.search import SearchOut, ItemUrl
 from app.routes.uploads import validate_image_bytes
 from app.services.zips import create_zip_from_keys
 from app.services.metrics import track
-from app.security.jwt import require_user  # 👈 para identificar usuário logado
+from app.security.jwt import require_any_user  # 👈 para identificar usuário logado
 import hashlib
 import time
 
@@ -21,7 +21,7 @@ async def search_faces(
     selfie: UploadFile = File(...),
     create_zip: bool = False,
     conn: AsyncSession = Depends(get_conn),
-    user=Depends(require_user)):
+    user=Depends(require_any_user)):
     """
     Busca faces correspondentes a uma imagem de selfie em um evento específico.
     """
