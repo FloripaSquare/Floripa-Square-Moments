@@ -8,6 +8,7 @@ export default function SelfiePage() {
   const router = useRouter();
   const params = useParams<{ slug?: string }>();
   const slug = params?.slug || "evento-teste";
+  const isFloripaSquare = slug === "floripa-square";
 
   const [selfie, setSelfie] = useState<File | null>(null);
   const [selfiePreview, setSelfiePreview] = useState<string | null>(null);
@@ -65,7 +66,9 @@ export default function SelfiePage() {
         style={{
           backgroundColor: "rgba(0,0,0,0.3)",
           backgroundBlendMode: "overlay",
-          backgroundImage: "url('/bg-form.png')",
+          backgroundImage: isFloripaSquare
+            ? "url('/bg-form-moments.png')"
+            : "url('/bg-form.png')",
         }}
       />
 
