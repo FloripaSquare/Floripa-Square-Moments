@@ -7,7 +7,8 @@ import Footer from "@/components/Footer";
 export default function UserLoginPage() {
   const router = useRouter();
   const params = useParams<{ slug?: string }>();
-  const slug = params?.slug ?? "evento-teste";
+  const slug = params?.slug;
+  const isFloripaSquare = slug === "floripa-square";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -55,7 +56,11 @@ export default function UserLoginPage() {
     <>
       <main
         className="min-h-screen flex flex-col items-center justify-center p-8 bg-cover bg-center"
-        style={{ backgroundImage: "url('/bg-form.png')" }}
+        style={{
+          backgroundImage: isFloripaSquare
+            ? "url('/bg-form-moments.png')"
+            : "url('/bg-form.png')",
+        }}
       >
         <div className="w-full max-w-md p-6 rounded-md">
           <h1 className="text-2xl font-bold mb-6 text-center text-white-800">
