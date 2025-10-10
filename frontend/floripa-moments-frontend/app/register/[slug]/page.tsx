@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Footer from "@/components/Footer";
 
-// --- Tipagem do formulário ---
 interface FormData {
   name: string;
   last_name: string;
@@ -22,7 +21,6 @@ interface FormData {
   responsible_consent: boolean;
 }
 
-// --- Tipagem do item do carrossel ---
 interface ConsentItem {
   key: keyof FormData;
   title: string;
@@ -35,8 +33,7 @@ export default function RegisterPage() {
   const router = useRouter();
   const slugParam = params?.slug;
   const slug = Array.isArray(slugParam) ? slugParam[0] : slugParam;
-
-  if (!slug) throw new Error("Slug não encontrado na URL");
+  const isFloripaSquare = slug === "floripa-square";
 
   const [form, setForm] = useState<FormData>({
     name: "",
@@ -58,7 +55,6 @@ export default function RegisterPage() {
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // --- Carrossel de consentimento ---
   const consentItems: ConsentItem[] = [
     {
       key: "biometric_acceptance",
@@ -113,9 +109,7 @@ export default function RegisterPage() {
     if (currentIndex < consentItems.length - 2) handleNext();
   };
 
-  const handleDotClick = (index: number) => {
-    setCurrentIndex(index);
-  };
+  const handleDotClick = (index: number) => setCurrentIndex(index);
 
   const handleWhatsappChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let val = e.target.value.replace(/\D/g, "");
@@ -167,10 +161,10 @@ export default function RegisterPage() {
     }
   };
 
-  const inputClass =
-    "w-full px-4 py-3 border border-gray-400 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:border-blue-700 focus:ring-2 focus:ring-blue-700";
+  const accentColor = isFloripaSquare ? "#f37021" : "#1d4ed8";
 
-  // Determina quais itens mostrar no carrossel
+  const inputClass = `w-full px-4 py-3 border border-gray-400 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-[${accentColor}]`;
+
   const visibleItems = () => {
     const orderedItems = [
       consentItems[0],
@@ -180,12 +174,10 @@ export default function RegisterPage() {
       consentItems[4],
       ...(form.age_declaration ? [] : [consentItems[5]]),
     ];
-
     if (currentIndex >= orderedItems.length - 2) return orderedItems.slice(-2);
     return [orderedItems[currentIndex]];
   };
 
-  // Renderiza dots de progresso
   const progressDots = () => {
     const orderedItems = [
       consentItems[0],
@@ -195,14 +187,13 @@ export default function RegisterPage() {
       consentItems[4],
       ...(form.age_declaration ? [] : [consentItems[5]]),
     ];
-
     return orderedItems.map((item, idx) => (
       <button
         key={idx}
         type="button"
         onClick={() => handleDotClick(idx)}
         className={`w-4 h-4 rounded-full transition-colors duration-200 focus:outline-none ${
-          form[item.key] ? "bg-blue-700" : "bg-gray-300"
+          form[item.key] ? `bg-[${accentColor}]` : "bg-gray-300"
         }`}
       />
     ));
@@ -212,13 +203,26 @@ export default function RegisterPage() {
     <>
       <main
         className="min-h-screen flex flex-col items-center justify-center p-4 bg-cover bg-center"
-        style={{ backgroundImage: "url('/bg-form.png')" }}
+        style={{
+          backgroundImage: isFloripaSquare
+            ? "url('/bg-form-moments.png')"
+            : "url('/bg-form.png')",
+        }}
       >
         <form
-          className="w-full max-w-md shadow-2xl rounded-xl p-8 space-y-4 border-2 border-blue-100 bg-white/90 overflow-y-auto max-h-[90vh]"
+          className={`w-full max-w-md shadow-2xl rounded-xl p-8 space-y-4 border-2 overflow-y-auto overflow-y-auto scrollbar-hide
+            ${
+              isFloripaSquare
+                ? "border-none text-white"
+                : "border-blue-100 bg-white/90 text-gray-900"
+            }`}
           onSubmit={handleSubmit}
         >
-          <h1 className="text-3xl font-extrabold text-center text-blue-800 mb-6">
+          <h1
+            className={`text-3xl font-extrabold text-center mb-6 ${
+              isFloripaSquare ? "text-[#ffff]" : "text-blue-800"
+            }`}
+          >
             Novo Cadastro
           </h1>
 
@@ -287,15 +291,23 @@ export default function RegisterPage() {
                   instagram: "@" + e.target.value.replace(/^@/, ""),
                 })
               }
-              className={`${inputClass} pl-7`} // espaço pro @
+              className={`${inputClass} pl-7`}
             />
           </div>
 
-          {/* Botão Políticas de Privacidade */}
-
           {/* Carrossel de consentimento */}
-          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 text-gray-900 text-sm space-y-4">
-            <h2 className="text-base font-bold text-center text-blue-900">
+          <div
+            className={`p-4 rounded-lg border text-sm space-y-4 ${
+              isFloripaSquare
+                ? "border-[#ffff]/50 bg-white/10 text-white"
+                : "border-blue-200 bg-blue-50 text-gray-900"
+            }`}
+          >
+            <h2
+              className={`text-base font-bold text-center ${
+                isFloripaSquare ? "text-[#ffffff]" : "text-blue-900"
+              }`}
+            >
               Termo de Consentimento - Plataforma “Moments”
             </h2>
 
@@ -307,21 +319,22 @@ export default function RegisterPage() {
                 title={item.title}
                 description={item.description}
                 required={item.required}
+                accentColor={"#ffff"}
               />
             ))}
 
-            {/* Dots de progresso */}
             <div className="flex justify-center gap-2 mt-3">
               {progressDots()}
             </div>
           </div>
 
-          {/* Botões */}
           <a
             href={`/${slug}/privacy-politcs`}
             target="_blank"
             rel="noopener noreferrer"
-            className="block text-center text-sm text-blue-700 mb-2 text-decoration-underline"
+            className={`block text-center text-sm mb-2 underline ${
+              isFloripaSquare ? "text-[#ffff]" : "text-blue-700"
+            }`}
           >
             Políticas de Privacidade
           </a>
@@ -329,21 +342,33 @@ export default function RegisterPage() {
             href={`/${slug}/terms`}
             target="_blank"
             rel="noopener noreferrer"
-            className="block text-center text-sm text-blue-700 mb-2 text-decoration-underline"
+            className={`block text-center text-sm mb-2 underline ${
+              isFloripaSquare ? "text-[#ffff]" : "text-blue-700"
+            }`}
           >
             Termos e Condições de Uso
           </a>
+
           <button
             type="submit"
-            className="w-full text-white py-3 rounded-lg font-semibold shadow-md transition duration-200 ease-in-out bg-blue-700 hover:bg-blue-800 disabled:bg-blue-400"
+            className={`w-full text-white py-3 rounded-lg font-semibold shadow-md transition duration-200 ease-in-out ${
+              isFloripaSquare
+                ? "bg-[#f37021] hover:bg-[#d35e1d]"
+                : "bg-blue-700 hover:bg-blue-800"
+            } disabled:opacity-60`}
             disabled={loading}
           >
             {loading ? "Enviando..." : "Finalizar Cadastro"}
           </button>
+
           <button
             type="button"
             onClick={() => router.push(`/login/${slug}`)}
-            className="w-full py-3 rounded-lg font-semibold shadow-md bg-blue-100 text-blue-800 hover:bg-blue-200"
+            className={`w-full py-3 rounded-lg font-semibold shadow-md ${
+              isFloripaSquare
+                ? "bg-white/10 text-white hover:bg-white/20"
+                : "bg-blue-100 text-blue-800 hover:bg-blue-200"
+            }`}
           >
             Já tenho cadastro
           </button>
@@ -366,19 +391,20 @@ export default function RegisterPage() {
   );
 }
 
-// --- Componente Checkbox reutilizável ---
 function Checkbox({
   checked,
   onChange,
   title,
   description,
   required = false,
+  accentColor = "#1d4ed8",
 }: {
   checked: boolean;
   onChange: () => void;
   title: string;
   description?: string;
   required?: boolean;
+  accentColor?: string;
 }) {
   return (
     <label className="flex items-start gap-3 cursor-pointer select-none">
@@ -386,13 +412,16 @@ function Checkbox({
         type="checkbox"
         checked={checked}
         onChange={onChange}
-        className="mt-1 h-5 w-5 accent-blue-700 border-gray-400 rounded"
+        className="mt-1 h-5 w-5 rounded border-gray-400"
+        style={{ accentColor }}
         required={required}
       />
       <div className="leading-snug">
-        <span className="block font-semibold text-blue-900">{title}</span>
+        <span className="block font-semibold" style={{ color: accentColor }}>
+          {title}
+        </span>
         {description && (
-          <span className="text-sm text-gray-700 block">{description}</span>
+          <span className="text-sm opacity-90 block">{description}</span>
         )}
       </div>
     </label>
