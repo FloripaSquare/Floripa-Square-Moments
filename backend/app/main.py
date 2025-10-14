@@ -29,7 +29,7 @@ app = FastAPI(
 origins = settings.CORS_ALLOW_ORIGINS.split(",") if settings.CORS_ALLOW_ORIGINS != "*" else ["*"]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "https://moments-floripasquare.com.br","http://192.168.0.108:3000"],
+    allow_origins=["http://localhost:3000", "https://moments-floripasquare.com.br","http://192.168.0.108:3000", "https://www.moments-floripasquare.com.br"],
     allow_credentials = True,
     allow_methods=["*"],
     allow_headers=["*"],
