@@ -1,0 +1,262 @@
+"use client";
+
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState, useRef, memo } from "react";
+import {
+  ArrowDownTrayIcon,
+  ArrowPathIcon,
+  PlayIcon,
+} from "@heroicons/react/24/solid";
+import Footer from "@/components/Footer";
+
+// --- Tipos ---
+type VideoItem = { key: string; url: string };
+type VideoOut = { count: number; items: VideoItem[] };
+
+// --- Card de vídeo ---
+const VideoCard = memo(function VideoCard({
+  item,
+  selected,
+  toggleSelect,
+}: {
+  item: VideoItem;
+  selected: boolean;
+  toggleSelect: (key: string) => void;
+}) {
+  const handleOpenVideo = () => window.open(item.url, "_blank");
+
+  return (
+    <div className="group relative w-full overflow-hidden rounded-lg bg-gray-200 shadow-lg">
+      <video
+        src={item.url}
+        className={`w-full object-cover transition-all duration-300 group-hover:scale-105 ${
+          selected ? "ring-4 ring-blue-500" : ""
+        }`}
+        muted
+        playsInline
+        loop
+      />
+      <input
+        type="checkbox"
+        checked={selected}
+        onChange={() => toggleSelect(item.key)}
+        className="absolute top-2 left-2 z-20 h-5 w-5 cursor-pointer accent-blue-500"
+      />
+      <button
+        onClick={handleOpenVideo}
+        title="Abrir este vídeo"
+        className="absolute bottom-2 right-2 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/80 text-gray-800 opacity-0 shadow-md transition-all duration-300 group-hover:opacity-100 hover:scale-110 hover:bg-white"
+      >
+        <PlayIcon className="h-6 w-6" />
+      </button>
+    </div>
+  );
+});
+
+// --- Página principal ---
+export default function VideosGalleryPage() {
+  const params = useParams<{ slug?: string }>();
+  const router = useRouter();
+  const slug = params?.slug;
+  const [videos, setVideos] = useState<VideoOut | null>(null);
+  const [displayItems, setDisplayItems] = useState<VideoItem[]>([]);
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+  const loaderRef = useRef<HTMLDivElement | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const perPage = 16;
+  const INACTIVITY_TIME = 5 * 60 * 1000;
+  const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL ?? "";
+
+  // --- Logout automático por inatividade ---
+  useEffect(() => {
+    if (!slug) return;
+
+    const resetTimer = () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      timeoutRef.current = setTimeout(() => {
+        router.push(`/login/${slug}`);
+      }, INACTIVITY_TIME);
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) router.push(`/login/${slug}`);
+      else resetTimer();
+    };
+
+    const events = [
+      "mousemove",
+      "mousedown",
+      "keypress",
+      "touchstart",
+      "scroll",
+    ];
+    events.forEach((ev) => window.addEventListener(ev, resetTimer));
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    resetTimer();
+
+    return () => {
+      events.forEach((ev) => window.removeEventListener(ev, resetTimer));
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, [slug, router]);
+
+  // --- Buscar vídeos ---
+  useEffect(() => {
+    if (!slug) return;
+
+    const fetchVideos = async () => {
+      try {
+        const base = API_ORIGIN.endsWith("/")
+          ? API_ORIGIN.slice(0, -1)
+          : API_ORIGIN;
+        const url = base
+          ? `${base}/gallery/${encodeURIComponent(slug)}/videos`
+          : `/gallery/${encodeURIComponent(slug)}/videos`;
+
+        const res = await fetch(url, { credentials: "include" });
+        if (!res.ok) throw new Error(`Erro ao carregar vídeos (${res.status})`);
+
+        const data: VideoItem[] = await res.json();
+        const unique = Array.from(
+          new Map(data.map((i) => [i.key, i])).values()
+        );
+
+        setVideos({ count: unique.length, items: unique });
+        setDisplayItems(unique.slice(0, perPage));
+      } catch (err) {
+        console.error("[DEBUG] Erro ao buscar vídeos:", err);
+        setVideos({ count: 0, items: [] });
+      }
+    };
+
+    fetchVideos();
+  }, [slug, API_ORIGIN]);
+
+  // --- Scroll infinito ---
+  useEffect(() => {
+    if (!videos) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry.isIntersecting) {
+          setDisplayItems((prev) => {
+            if (prev.length >= videos.items.length) return prev;
+            return videos.items.slice(0, prev.length + perPage);
+          });
+        }
+      },
+      { rootMargin: "200px" }
+    );
+
+    const loader = loaderRef.current;
+    if (loader) observer.observe(loader);
+    return () => {
+      if (loader) observer.unobserve(loader);
+      observer.disconnect();
+    };
+  }, [videos]);
+
+  // --- Seleção múltipla ---
+  const toggleSelect = (key: string) => {
+    setSelectedKeys((prev) => {
+      const newSet = new Set(prev);
+      newSet.has(key) ? newSet.delete(key) : newSet.add(key);
+      return newSet;
+    });
+  };
+
+  // --- Download múltiplo ---
+  const downloadSelected = async () => {
+    if (!videos) return;
+    const selectedItems = videos.items.filter((i) => selectedKeys.has(i.key));
+
+    for (const item of selectedItems) {
+      try {
+        const res = await fetch(item.url);
+        const blob = await res.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = objectUrl;
+        a.download = item.key;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(objectUrl);
+      } catch (err) {
+        console.error("Erro ao baixar vídeo:", err);
+      }
+    }
+  };
+
+  // --- Estados de renderização ---
+  if (!slug) return <StateMessage message="Evento inválido." />;
+  if (!videos)
+    return <StateMessage showSpinner message="Carregando vídeos..." />;
+  if (videos.items.length === 0)
+    return <StateMessage message="Nenhum vídeo disponível." />;
+
+  return (
+    <main className="min-h-screen bg-gray-50 p-4 sm:p-6 md:p-8">
+      <div className="mx-auto max-w-7xl">
+        <header className="mb-6 flex flex-col items-center justify-between gap-4 sm:flex-row">
+          <h1 className="text-center text-xl font-bold text-gray-800 sm:text-left sm:text-2xl md:text-3xl">
+            Vídeos do evento ({videos.count})
+          </h1>
+          {selectedKeys.size > 0 && (
+            <button
+              onClick={downloadSelected}
+              className="flex items-center gap-2 rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+            >
+              <ArrowDownTrayIcon className="h-5 w-5" />
+              Baixar selecionados ({selectedKeys.size})
+            </button>
+          )}
+        </header>
+
+        {/* Masonry Layout */}
+        <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-3 space-y-3">
+          {displayItems.map((item) => (
+            <div key={item.key} className="break-inside-avoid">
+              <VideoCard
+                item={item}
+                selected={selectedKeys.has(item.key)}
+                toggleSelect={toggleSelect}
+              />
+            </div>
+          ))}
+        </div>
+
+        {/* Loader */}
+        <div ref={loaderRef} className="flex h-20 items-center justify-center">
+          {displayItems.length < videos.items.length && (
+            <ArrowPathIcon className="h-8 w-8 animate-spin text-gray-400" />
+          )}
+        </div>
+      </div>
+      <Footer />
+    </main>
+  );
+}
+
+// --- Mensagem de estado ---
+function StateMessage({
+  message,
+  showSpinner = false,
+}: {
+  message: string;
+  showSpinner?: boolean;
+}) {
+  return (
+    <main className="flex min-h-screen w-full items-center justify-center bg-gray-50">
+      <div className="text-center">
+        {showSpinner && (
+          <ArrowPathIcon className="mx-auto h-12 w-12 animate-spin text-gray-400" />
+        )}
+        <p className="mt-2 text-gray-600">{message}</p>
+      </div>
+    </main>
+  );
+}

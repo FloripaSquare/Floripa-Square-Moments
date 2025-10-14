@@ -1,7 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { API_URL } from "@/lib/api";
 import { PhotoIcon } from "@heroicons/react/24/solid";
 
@@ -30,6 +29,8 @@ export default function UploadPhotosForm({
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setMessage("");
     if (e.target.files) setSelectedFiles(e.target.files);
@@ -37,6 +38,7 @@ export default function UploadPhotosForm({
 
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!selectedFiles || selectedFiles.length === 0 || !selectedEvent) {
       setMessage("❌ Selecione um evento e ao menos uma foto para enviar.");
       return;
@@ -53,10 +55,11 @@ export default function UploadPhotosForm({
       if (!token) throw new Error("Token não encontrado");
 
       const formData = new FormData();
-      Array.from(selectedFiles).forEach((file) =>
-        formData.append("files", file)
-      );
+      Array.from(selectedFiles).forEach((file) => {
+        formData.append("files", file); // chave esperada pelo backend
+      });
 
+      // ✅ Rota correta para múltiplos arquivos com Rekognition
       const res = await fetch(`${API_URL}/uploads/${selectedEvent}/photos`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
@@ -73,15 +76,15 @@ export default function UploadPhotosForm({
         `✅ ${data.uploaded_keys.length} foto(s) enviada(s) com sucesso!`
       );
 
+      // Limpar seleção
       setSelectedFiles(null);
-      if (document.getElementById("file-upload")) {
-        (document.getElementById("file-upload") as HTMLInputElement).value = "";
-      }
+      if (fileInputRef.current) fileInputRef.current.value = "";
 
       onUploaded?.();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setMessage(`❌ ${err.message}`);
+      if (err instanceof Error) setMessage(`❌ ${err.message}`);
+      else setMessage(`❌ Erro desconhecido: ${String(err)}`);
     } finally {
       setLoading(false);
     }
@@ -128,20 +131,16 @@ export default function UploadPhotosForm({
               aria-hidden="true"
             />
             <div className="mt-4 flex text-sm leading-6 text-gray-600">
-              <label
-                htmlFor="file-upload"
-                className="relative cursor-pointer rounded-md bg-white font-semibold text-blue-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-blue-600 focus-within:ring-offset-2 hover:text-blue-500"
-              >
+              <label className="relative cursor-pointer rounded-md bg-white font-semibold text-blue-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-blue-600 focus-within:ring-offset-2 hover:text-blue-500">
                 <span>Clique para enviar</span>
                 <input
-                  id="file-upload"
-                  name="file-upload"
+                  ref={fileInputRef}
                   type="file"
-                  className="sr-only"
                   multiple
                   accept="image/*"
                   onChange={handleFileChange}
                   disabled={loading}
+                  className="sr-only"
                 />
               </label>
               <p className="pl-1">ou arraste e solte</p>

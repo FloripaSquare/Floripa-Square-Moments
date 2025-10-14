@@ -9,8 +9,6 @@ from typing import List
 router = APIRouter()
 
 
-
-
 @router.get("/{slug}", response_model=EventOut)
 async def get_event(slug: str, conn: AsyncSession = Depends(get_conn)):
     event = await get_event_by_slug_service(conn, slug)
@@ -19,6 +17,6 @@ async def get_event(slug: str, conn: AsyncSession = Depends(get_conn)):
     return event
 
 # Listar eventos
-@router.get("/", response_model=List[EventOut])
+@router.get("", response_model=List[EventOut])
 async def events_list(conn: AsyncSession = Depends(get_conn)):
     return await list_events(conn)

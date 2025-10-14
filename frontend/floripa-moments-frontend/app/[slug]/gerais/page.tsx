@@ -9,75 +9,36 @@ import Footer from "@/components/Footer";
 type SearchItem = { key: string; url: string };
 type SearchOut = { count: number; items: SearchItem[] };
 
-// --- Função Utilitária para a Métrica (sem alterações) ---
-async function trackDownloadIntent(slug: string, fileName: string) {
-  const token = localStorage.getItem("user_token");
-  if (!token) {
-    console.warn(
-      "Métrica de download não registrada: token de usuário não encontrado."
-    );
-    return;
-  }
-  try {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL;
-    await fetch(`${API_URL}/metrics/download`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ event_slug: slug, file_name: fileName }),
-    });
-    console.log(`Métrica de download registrada para: ${fileName}`);
-  } catch (error) {
-    console.error("Falha ao registrar métrica de download:", error);
-  }
-}
-
-// --- Componente do Card da Imagem (VERSÃO DEFINITIVA) ---
+// --- Card de imagem ---
 const ImageCard = memo(function ImageCard({
   item,
   selected,
   toggleSelect,
-  slug,
 }: {
   item: SearchItem;
   selected: boolean;
   toggleSelect: (key: string) => void;
-  slug: string;
 }) {
   const handleOpenImage = () => window.open(item.url, "_blank");
 
-  const handleContextMenu = (e: React.MouseEvent) => {
-    // Log para confirmar que o evento foi capturado no console do NAVEGADOR
-    console.log("Context Menu Event Fired! Tracking download for:", item.key);
-    trackDownloadIntent(slug, item.key);
-    // Não usamos e.preventDefault() para que o menu nativo do navegador apareça.
-  };
-
   return (
-    // O container não tem mais `aspect-square`, permitindo alturas variadas.
     <div className="group relative w-full overflow-hidden rounded-lg bg-gray-200 shadow-lg">
-      {/* 1. Usamos a tag <img> padrão. É o segredo para o masonry e para o evento funcionarem. */}
       <img
         src={item.url}
-        alt={`Foto da busca`}
-        className="w-full h-auto object-cover transition-all duration-300 group-hover:brightness-75"
-        loading="lazy"
-        // 2. O listener de evento está DIRETAMENTE na imagem.
-        onContextMenu={handleContextMenu}
+        alt={item.key}
+        className={`w-full object-cover transition-all duration-300 group-hover:scale-110 group-hover:brightness-50 ${
+          selected ? "ring-4 ring-blue-500" : ""
+        }`}
       />
-
-      {/* 3. A UI fica por cima. O z-index garante a sobreposição. */}
       <input
         type="checkbox"
         checked={selected}
         onChange={() => toggleSelect(item.key)}
-        className="absolute top-2 left-2 z-10 h-5 w-5 cursor-pointer accent-blue-500"
+        className="absolute top-2 left-2 z-20 h-5 w-5 cursor-pointer accent-blue-500"
       />
       <button
         onClick={handleOpenImage}
-        title="Abrir esta foto em nova aba"
+        title="Abrir esta foto"
         className="absolute bottom-2 right-2 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/80 text-gray-800 opacity-0 shadow-md transition-all duration-300 group-hover:opacity-100 hover:scale-110 hover:bg-white"
       >
         <ArrowDownTrayIcon className="h-6 w-6" />
@@ -86,30 +47,37 @@ const ImageCard = memo(function ImageCard({
   );
 });
 
-// --- Componente Principal da Página (com layout masonry) ---
-export default function ResultPage() {
+// --- Página principal ---
+export default function GeneralGalleryPage() {
   const params = useParams<{ slug?: string }>();
   const router = useRouter();
+  const slug = params?.slug;
   const [searchResult, setSearchResult] = useState<SearchOut | null>(null);
   const [displayItems, setDisplayItems] = useState<SearchItem[]>([]);
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
   const loaderRef = useRef<HTMLDivElement | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const perPage = 24;
   const INACTIVITY_TIME = 5 * 60 * 1000;
-  const timeoutRef = useRef<number | undefined>(undefined);
-  const slug = params?.["slug"] as string;
+  const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL ?? "";
 
+  // --- Logout automático ---
   useEffect(() => {
+    if (!slug) return;
+
     const resetTimer = () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      timeoutRef.current = window.setTimeout(() => {
+      timeoutRef.current = setTimeout(() => {
         router.push(`/login/${slug}`);
       }, INACTIVITY_TIME);
     };
+
     const handleVisibilityChange = () => {
       if (document.hidden) router.push(`/login/${slug}`);
       else resetTimer();
     };
+
     const events = [
       "mousemove",
       "mousedown",
@@ -117,98 +85,124 @@ export default function ResultPage() {
       "touchstart",
       "scroll",
     ];
-    events.forEach((event) => window.addEventListener(event, resetTimer));
+    events.forEach((ev) => window.addEventListener(ev, resetTimer));
     document.addEventListener("visibilitychange", handleVisibilityChange);
+
     resetTimer();
+
     return () => {
-      events.forEach((event) => window.removeEventListener(event, resetTimer));
+      events.forEach((ev) => window.removeEventListener(ev, resetTimer));
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, [slug, router]);
 
+  // --- Buscar fotos gerais ---
   useEffect(() => {
-    const stored = localStorage.getItem("search_result");
-    if (stored) {
-      const result = JSON.parse(stored) as SearchOut;
-      const uniqueItems = Array.from(
-        new Map(result.items.map((item) => [item.key, item])).values()
-      );
-      setSearchResult({ count: uniqueItems.length, items: uniqueItems });
-      setDisplayItems(uniqueItems.slice(0, perPage));
-    }
-  }, []);
+    if (!slug) return;
 
+    const fetchGeneralPhotos = async () => {
+      try {
+        const base = API_ORIGIN.endsWith("/")
+          ? API_ORIGIN.slice(0, -1)
+          : API_ORIGIN;
+        const url = base
+          ? `${base}/gallery/${encodeURIComponent(slug)}/general`
+          : `/gallery/${encodeURIComponent(slug)}/general`;
+
+        const res = await fetch(url, { credentials: "include" });
+        if (!res.ok) throw new Error(`Erro ao carregar fotos (${res.status})`);
+
+        const data: SearchItem[] = await res.json();
+        const unique = Array.from(
+          new Map(data.map((i) => [i.key, i])).values()
+        );
+
+        setSearchResult({ count: unique.length, items: unique });
+        setDisplayItems(unique.slice(0, perPage));
+      } catch (err) {
+        console.error("[DEBUG] Erro ao buscar fotos gerais:", err);
+        setSearchResult({ count: 0, items: [] });
+      }
+    };
+
+    fetchGeneralPhotos();
+  }, [slug, API_ORIGIN]);
+
+  // --- Scroll infinito ---
   useEffect(() => {
     if (!searchResult) return;
+
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting) {
-          setDisplayItems((prevItems) => {
-            if (prevItems.length >= searchResult.items.length) return prevItems;
-            return searchResult.items.slice(0, prevItems.length + perPage);
+        const [entry] = entries;
+        if (entry.isIntersecting) {
+          setDisplayItems((prev) => {
+            if (prev.length >= searchResult.items.length) return prev;
+            return searchResult.items.slice(0, prev.length + perPage);
           });
         }
       },
       { rootMargin: "200px" }
     );
-    const currentLoader = loaderRef.current;
-    if (currentLoader) observer.observe(currentLoader);
+
+    const loader = loaderRef.current;
+    if (loader) observer.observe(loader);
+
     return () => {
-      if (currentLoader) observer.unobserve(currentLoader);
+      if (loader) observer.unobserve(loader);
+      observer.disconnect();
     };
   }, [searchResult]);
 
+  // --- Seleção de imagens ---
   const toggleSelect = (key: string) => {
     setSelectedKeys((prev) => {
       const newSet = new Set(prev);
-      if (newSet.has(key)) newSet.delete(key);
-      else newSet.add(key);
+      newSet.has(key) ? newSet.delete(key) : newSet.add(key);
       return newSet;
     });
   };
 
+  // --- Download múltiplo ---
   const downloadSelected = async () => {
     if (!searchResult) return;
-    const selectedItems = searchResult.items.filter((item) =>
-      selectedKeys.has(item.key)
+    const selectedItems = searchResult.items.filter((i) =>
+      selectedKeys.has(i.key)
     );
+
     for (const item of selectedItems) {
-      trackDownloadIntent(slug, item.key);
       try {
-        const response = await fetch(item.url);
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
+        const res = await fetch(item.url);
+        const blob = await res.blob();
+        const objectUrl = URL.createObjectURL(blob);
         const a = document.createElement("a");
-        a.href = url;
-        a.download = item.key.split("/").pop() || "foto.jpg";
+        a.href = objectUrl;
+        a.download = item.key;
         document.body.appendChild(a);
         a.click();
         a.remove();
-        window.URL.revokeObjectURL(url);
+        URL.revokeObjectURL(objectUrl);
       } catch (err) {
         console.error("Erro ao baixar imagem:", err);
       }
     }
   };
 
-  if (!slug) return <StateMessage message="Nenhuma busca informada." />;
+  // --- Renderização de estado ---
+  if (!slug) return <StateMessage message="Evento inválido." />;
   if (!searchResult)
-    return <StateMessage showSpinner message="Carregando resultados..." />;
+    return <StateMessage showSpinner message="Carregando fotos gerais..." />;
   if (searchResult.items.length === 0)
-    return <StateMessage message="Nenhuma foto encontrada para sua busca." />;
+    return <StateMessage message="Nenhuma foto geral disponível." />;
 
   return (
     <main className="min-h-screen bg-gray-50 p-4 sm:p-6 md:p-8">
       <div className="mx-auto max-w-7xl">
         <header className="mb-6 flex flex-col items-center justify-between gap-4 sm:flex-row">
           <h1 className="text-center text-xl font-bold text-gray-800 sm:text-left sm:text-2xl md:text-3xl">
-            {searchResult.count} foto{searchResult.count !== 1 ? "s" : ""}{" "}
-            encontrada{searchResult.count !== 1 ? "s" : ""}
+            Fotos gerais do evento ({searchResult.count})
           </h1>
-          <p className="text-gray-600">
-            Pressione por alguns segundos a foto para opções de download
-          </p>
           {selectedKeys.size > 0 && (
             <button
               onClick={downloadSelected}
@@ -219,7 +213,8 @@ export default function ResultPage() {
             </button>
           )}
         </header>
-        {/* Layout Masonry com colunas */}
+
+        {/* Masonry Layout */}
         <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-3 space-y-3">
           {displayItems.map((item) => (
             <div key={item.key} className="break-inside-avoid">
@@ -227,11 +222,12 @@ export default function ResultPage() {
                 item={item}
                 selected={selectedKeys.has(item.key)}
                 toggleSelect={toggleSelect}
-                slug={slug}
               />
             </div>
           ))}
         </div>
+
+        {/* Loader */}
         <div ref={loaderRef} className="flex h-20 items-center justify-center">
           {displayItems.length < searchResult.items.length && (
             <ArrowPathIcon className="h-8 w-8 animate-spin text-gray-400" />
@@ -243,7 +239,7 @@ export default function ResultPage() {
   );
 }
 
-// --- Componente auxiliar para mensagens (sem alterações) ---
+// --- Componente de mensagem de estado ---
 function StateMessage({
   message,
   showSpinner = false,

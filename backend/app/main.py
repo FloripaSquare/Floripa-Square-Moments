@@ -13,7 +13,7 @@ from app.services.db import engine, async_session_maker, init_db
 from app.errors import botocore_error_handler, generic_error_handler
 from botocore.exceptions import BotoCoreError, ClientError
 
-from app.routes import health, events, ingest, search, admin, privacy, users, metrics, auth, uploads, sessions, users_me
+from app.routes import health, events, ingest, search, admin, privacy, users, metrics, auth, uploads, sessions, users_me, gallery
 from app.schemas.session import active_sessions_table
 from app.security.jwt import SECRET_KEY, ALGORITHM
 
@@ -29,8 +29,8 @@ app = FastAPI(
 origins = settings.CORS_ALLOW_ORIGINS.split(",") if settings.CORS_ALLOW_ORIGINS != "*" else ["*"]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # ou ["*"] para teste
-    allow_credentials=False,
+    allow_origins=["http://localhost:3000", "https://moments-floripasquare.com.br","http://192.168.0.108:3000"],
+    allow_credentials = True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -88,7 +88,7 @@ api_router.include_router(ingest.router, prefix="/ingest", tags=["Ingest"])
 api_router.include_router(uploads.router, prefix="/uploads", tags=["Uploads"])
 api_router.include_router(users.router, prefix="/users", tags=["Users"])
 app.include_router(users_me.router, prefix="/users", tags=["Users Me"])
-
+app.include_router(gallery.router, prefix="/gallery", tags=["Gallery"])
 
 # Rotas de Administração
 admin_router = APIRouter(prefix="/admin")
@@ -97,9 +97,11 @@ admin_router.include_router(metrics.router, prefix="/metrics", tags=["Admin Metr
 admin_router.include_router(sessions.router, prefix="/sessions", tags=["Admin Sessions"])
 api_router.include_router(admin_router)
 
+
 app.include_router(api_router)
 
 # --- Exception Handlers ---
 app.add_exception_handler(BotoCoreError, botocore_error_handler)
 app.add_exception_handler(ClientError, botocore_error_handler)
 app.add_exception_handler(Exception, generic_error_handler)
+

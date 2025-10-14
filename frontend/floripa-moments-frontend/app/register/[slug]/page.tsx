@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Footer from "@/components/Footer";
 
+// --- Interfaces e Tipos ---
 interface FormData {
   name: string;
   last_name: string;
@@ -28,6 +29,7 @@ interface ConsentItem {
   required?: boolean;
 }
 
+// --- Componente Principal ---
 export default function RegisterPage() {
   const params = useParams();
   const router = useRouter();
@@ -131,6 +133,23 @@ export default function RegisterPage() {
       return;
     }
 
+    const requiredConsents: (keyof FormData)[] = consentItems
+      .filter((item) => item.required)
+      .map((item) => item.key);
+
+    for (const key of requiredConsents) {
+      if (!form[key]) {
+        const consentTitle =
+          consentItems.find((c) => c.key === key)?.title ||
+          "um termo obrigatório";
+        setMsg({
+          text: `O consentimento "${consentTitle}" é obrigatório.`,
+          ok: false,
+        });
+        return;
+      }
+    }
+
     try {
       setLoading(true);
       setMsg(null);
@@ -141,14 +160,21 @@ export default function RegisterPage() {
         body: JSON.stringify({ ...form, event_slug: slug }),
       });
 
-      if (!res.ok) throw new Error("Erro ao cadastrar usuário");
+      const responseData = await res.json();
 
-      const userData = await res.json();
-      if (userData?.token) {
-        localStorage.setItem("user_token", userData.token);
+      if (!res.ok) {
+        throw new Error(responseData.detail || "Erro ao cadastrar usuário");
+      }
+
+      if (responseData?.token) {
+        localStorage.setItem("user_token", responseData.token);
         router.push(`/${slug}/selfie`);
       } else {
-        router.push(`/login/${slug}`);
+        setMsg({
+          text: "Cadastro realizado com sucesso! Faça o login.",
+          ok: true,
+        });
+        setTimeout(() => router.push(`/login/${slug}`), 2000);
       }
     } catch (err: unknown) {
       setMsg({
@@ -163,7 +189,7 @@ export default function RegisterPage() {
 
   const accentColor = isFloripaSquare ? "#f37021" : "#1d4ed8";
 
-  const inputClass = `w-full px-4 py-3 border border-gray-400 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-[${accentColor}]`;
+  const inputClass = `w-full px-4 py-2.5 border border-gray-400 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-[${accentColor}]`;
 
   const visibleItems = () => {
     const orderedItems = [
@@ -192,7 +218,7 @@ export default function RegisterPage() {
         key={idx}
         type="button"
         onClick={() => handleDotClick(idx)}
-        className={`w-4 h-4 rounded-full transition-colors duration-200 focus:outline-none ${
+        className={`w-3 h-3 rounded-full transition-colors duration-200 focus:outline-none ${
           form[item.key] ? `bg-[${accentColor}]` : "bg-gray-300"
         }`}
       />
@@ -210,7 +236,7 @@ export default function RegisterPage() {
         }}
       >
         <form
-          className={`w-full max-w-md shadow-2xl rounded-xl p-8 space-y-4 border-2 overflow-y-auto overflow-y-auto scrollbar-hide
+          className={`w-full max-w-md shadow-2xl rounded-xl p-6 space-y-3 border-2 overflow-y-auto scrollbar-hide max-h-[90vh] 
             ${
               isFloripaSquare
                 ? "border-none text-white"
@@ -219,30 +245,32 @@ export default function RegisterPage() {
           onSubmit={handleSubmit}
         >
           <h1
-            className={`text-3xl font-extrabold text-center mb-6 ${
+            className={`text-3xl font-extrabold text-center mb-4 ${
               isFloripaSquare ? "text-[#ffff]" : "text-blue-800"
             }`}
           >
             Novo Cadastro
           </h1>
 
-          {/* Inputs principais */}
-          <input
-            type="text"
-            placeholder="Nome"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-            className={inputClass}
-            required
-          />
-          <input
-            type="text"
-            placeholder="Sobrenome"
-            value={form.last_name}
-            onChange={(e) => setForm({ ...form, last_name: e.target.value })}
-            className={inputClass}
-            required
-          />
+          <div className="flex flex-col sm:flex-row gap-3">
+            <input
+              type="text"
+              placeholder="Nome"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              className={inputClass}
+              required
+            />
+            <input
+              type="text"
+              placeholder="Sobrenome"
+              value={form.last_name}
+              onChange={(e) => setForm({ ...form, last_name: e.target.value })}
+              className={inputClass}
+              required
+            />
+          </div>
+
           <input
             type="email"
             placeholder="Email"
@@ -251,24 +279,28 @@ export default function RegisterPage() {
             className={inputClass}
             required
           />
-          <input
-            type="password"
-            placeholder="Senha"
-            value={form.password}
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
-            className={inputClass}
-            required
-          />
-          <input
-            type="password"
-            placeholder="Confirme a senha"
-            value={form.confirm_password}
-            onChange={(e) =>
-              setForm({ ...form, confirm_password: e.target.value })
-            }
-            className={inputClass}
-            required
-          />
+
+          <div className="flex flex-col sm:flex-row gap-3">
+            <input
+              type="password"
+              placeholder="Senha"
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              className={inputClass}
+              required
+            />
+            <input
+              type="password"
+              placeholder="Confirme a senha"
+              value={form.confirm_password}
+              onChange={(e) =>
+                setForm({ ...form, confirm_password: e.target.value })
+              }
+              className={inputClass}
+              required
+            />
+          </div>
+
           <input
             type="tel"
             placeholder="WhatsApp"
@@ -295,9 +327,8 @@ export default function RegisterPage() {
             />
           </div>
 
-          {/* Carrossel de consentimento */}
           <div
-            className={`p-4 rounded-lg border text-sm space-y-4 ${
+            className={`p-3 rounded-lg border text-sm space-y-3 ${
               isFloripaSquare
                 ? "border-[#ffff]/50 bg-white/10 text-white"
                 : "border-blue-200 bg-blue-50 text-gray-900"
@@ -308,9 +339,8 @@ export default function RegisterPage() {
                 isFloripaSquare ? "text-[#ffffff]" : "text-blue-900"
               }`}
             >
-              Termo de Consentimento - Plataforma “Moments”
+              Termo de Consentimento
             </h2>
-
             {visibleItems().map((item) => (
               <Checkbox
                 key={item.key}
@@ -319,39 +349,46 @@ export default function RegisterPage() {
                 title={item.title}
                 description={item.description}
                 required={item.required}
-                accentColor={"#ffff"}
+                accentColor={isFloripaSquare ? "#ffffff" : accentColor}
               />
             ))}
-
-            <div className="flex justify-center gap-2 mt-3">
+            <div className="flex justify-center gap-2 pt-1">
               {progressDots()}
             </div>
           </div>
 
-          <a
-            href={`/${slug}/privacy-politcs`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`block text-center text-sm mb-2 underline ${
-              isFloripaSquare ? "text-[#ffff]" : "text-blue-700"
-            }`}
-          >
-            Políticas de Privacidade
-          </a>
-          <a
-            href={`/${slug}/terms`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`block text-center text-sm mb-2 underline ${
-              isFloripaSquare ? "text-[#ffff]" : "text-blue-700"
-            }`}
-          >
-            Termos e Condições de Uso
-          </a>
+          <div className="text-center text-sm space-y-1">
+            <a
+              href={`/${slug}/privacy-politcs`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`underline ${
+                isFloripaSquare ? "text-[#ffff]" : "text-blue-700"
+              }`}
+            >
+              Políticas de Privacidade
+            </a>
+            <span
+              className={isFloripaSquare ? "text-white/70" : "text-gray-500"}
+            >
+              {" "}
+              |{" "}
+            </span>
+            <a
+              href={`/${slug}/terms`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`underline ${
+                isFloripaSquare ? "text-[#ffff]" : "text-blue-700"
+              }`}
+            >
+              Termos e Condições de Uso
+            </a>
+          </div>
 
           <button
             type="submit"
-            className={`w-full text-white py-3 rounded-lg font-semibold shadow-md transition duration-200 ease-in-out ${
+            className={`w-full text-white py-2.5 rounded-lg font-semibold shadow-md transition duration-200 ease-in-out ${
               isFloripaSquare
                 ? "bg-[#f37021] hover:bg-[#d35e1d]"
                 : "bg-blue-700 hover:bg-blue-800"
@@ -360,11 +397,10 @@ export default function RegisterPage() {
           >
             {loading ? "Enviando..." : "Finalizar Cadastro"}
           </button>
-
           <button
             type="button"
             onClick={() => router.push(`/login/${slug}`)}
-            className={`w-full py-3 rounded-lg font-semibold shadow-md ${
+            className={`w-full py-2.5 rounded-lg font-semibold shadow-md ${
               isFloripaSquare
                 ? "bg-white/10 text-white hover:bg-white/20"
                 : "bg-blue-100 text-blue-800 hover:bg-blue-200"
@@ -391,6 +427,7 @@ export default function RegisterPage() {
   );
 }
 
+// --- Componente Checkbox ---
 function Checkbox({
   checked,
   onChange,

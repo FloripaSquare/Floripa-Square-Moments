@@ -54,16 +54,33 @@ class UserCreate(UserBase):
     age_declaration: bool = True
     responsible_consent: bool = True
 
+
+# --- INÍCIO DA CORREÇÃO ---
 class UserOut(BaseModel):
-    id: str
+    """Este é o schema que a sua API RETORNA."""
+    id: uuid.UUID
     name: str
-    last_name: Optional[str]
-    email: str
-    whatsapp: Optional[str]
-    instagram: Optional[str]
-    accepted_lgpd: bool
-    event_slug: Optional[str]
+    last_name: Optional[str] = None
+    email: EmailStr
+    whatsapp: Optional[str] = None
+    instagram: Optional[str] = None
+    event_slug: Optional[str] = None
     role: UserRole
+
+    # ✅ Campos que estavam faltando foram adicionados
+    accepted_lgpd: bool
+    biometric_acceptance: bool
+    international_transfer_data: bool
+    image_usage_portifolio: bool
+    marketing_communication_usage: bool
+    age_declaration: bool
+    responsible_consent: Optional[bool] = None  # É opcional, pois é nullable no DB
+
+    class Config:
+        from_attributes = True
+
+
+# --- FIM DA CORREÇÃO ---
 
 class LoginSchema(BaseModel):
     email: EmailStr
@@ -79,4 +96,4 @@ class AdminCreate(UserBase):
     marketing_communication_usage: bool = True
     age_declaration: bool = True
     responsible_consent: bool = True
-    
+

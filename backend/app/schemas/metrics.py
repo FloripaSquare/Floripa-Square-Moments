@@ -29,3 +29,17 @@ class MetricIn(BaseModel):
 class MetricOut(MetricIn):
     id: str
     created_at: str
+
+class AdminMetricSummary(BaseModel):
+    event_slug: Optional[str] = None # Adicionado o campo do evento
+    user_name: str
+    pesquisas: int
+    cadastros: int
+
+    class Config:
+        from_attributes = True
+
+
+class DownloadMetricIn(BaseModel):
+    event_slug: str
+    file_name: str

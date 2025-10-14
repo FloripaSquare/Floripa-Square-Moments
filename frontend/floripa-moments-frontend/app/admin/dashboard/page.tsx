@@ -4,8 +4,12 @@ import { useEffect, useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { API_URL } from "@/lib/api";
 
+// Componentes e Ícones
 import CreateEventForm from "@/components/events/CreateEventForm";
 import UploadPhotosForm from "@/components/events/UploadPhotosForm";
+import CreatePhotographerForm from "@/components/events/CreatePhotographerForm";
+import EventDashboardAccordion from "@/components/admin/EventDashboardAccordion"; // Importe o novo componente
+import UploadMediaForm from "@/components/events/UploadMediaForm";
 
 import {
   MagnifyingGlassIcon,
@@ -13,7 +17,6 @@ import {
   ArrowPathIcon,
   PowerIcon,
 } from "@heroicons/react/24/outline";
-
 import {
   LineChart,
   Line,
@@ -26,27 +29,35 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-
 import { subDays, format, parseISO } from "date-fns";
-import CreatePhotographerForm from "@/components/events/CreatePhotographerForm";
 
-// --- Tipos ---
+// --- Tipos de Dados ---
+
+// Evento
 interface Event {
   slug: string;
   title: string;
+  event_date: string;
+  start_time: string;
+  end_time: string;
 }
 
-interface Metric {
-  id: string;
-  user_id: string | null;
-  user_name?: string | null;
+// Métrica agregada retornada pela nova API /admin/metrics
+interface AggregatedMetric {
   event_slug: string | null;
-  type: string;
+  user_name: string;
+  pesquisas: number;
+  cadastros: number;
+}
+
+// Métrica bruta, necessária para o gráfico de atividade por tempo
+interface RawMetric {
+  type: "search" | "register";
   count: number;
   created_at: string;
 }
 
-// --- Componentes Reutilizáveis ---
+// --- Componentes Reutilizáveis (sem alteração) ---
 function StatCard({
   title,
   value,
@@ -84,275 +95,189 @@ function LoadingSpinner() {
   );
 }
 
-// --- Dashboard ---
+// --- Componente Principal do Dashboard ---
 export default function AdminDashboardPage() {
   const router = useRouter();
 
   // --- Estados ---
   const [events, setEvents] = useState<Event[]>([]);
-  const [metrics, setMetrics] = useState<Metric[]>([]);
+  const [aggregatedMetrics, setAggregatedMetrics] = useState<
+    AggregatedMetric[]
+  >([]);
+  // Estado separado para o gráfico de atividade, que precisa de dados brutos
+  const [activityMetrics, setActivityMetrics] = useState<RawMetric[]>([]);
   const [loading, setLoading] = useState(true);
-  const [timeRange, setTimeRange] = useState<
-    "1h" | "3h" | "5h" | "8h" | "10h" | "12h" | "24h" | "3D" | "7D"
-  >("1h");
+  const [timeRange, setTimeRange] = useState<"1h" | "24h" | "3D" | "7D">("24h");
 
-  const [newUser, setNewUser] = useState({
-    name: "",
-    email: "",
-    password: "",
-    role: "PHOTOGRAPHER",
-  });
-  const [creatingUser, setCreatingUser] = useState(false);
-  const [userMsg, setUserMsg] = useState<{ text: string; ok: boolean } | null>(
-    null
-  );
-
-  // --- Logout ---
-  const handleLogout = () => {
+  // --- Funções de Autenticação ---
+  const handleLogout = useCallback(() => {
     if (window.confirm("Tem certeza que deseja sair?")) {
       localStorage.removeItem("admin_token");
-      localStorage.removeItem("admin_token_jti");
       router.push("/admin/login");
     }
-  };
+  }, [router]);
 
-  // --- Buscar username por ID (cache para otimizar múltiplas chamadas) ---
-  const fetchUserNames = useCallback(async (userIds: string[]) => {
-    const token = localStorage.getItem("admin_token") || "";
-    const cache: Record<string, string> = {};
-    await Promise.all(
-      userIds.map(async (id) => {
-        try {
-          const res = await fetch(`${API_URL}/users/${id}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          if (res.ok) {
-            const user = await res.json();
-            cache[id] = user.name || "Anônimo";
-            cache[id] =
-              user.name + (user.last_name ? ` ${user.last_name}` : "");
-          } else {
-            cache[id] = "Anônimo";
-          }
-        } catch {
-          cache[id] = "Anônimo";
-        }
-      })
-    );
-    return cache;
-  }, []);
-
-  // --- Fetch de dados ---
+  // --- Fetch de Dados Otimizado ---
   const fetchAllData = useCallback(async () => {
     setLoading(true);
+    const token = localStorage.getItem("admin_token");
+    if (!token) {
+      router.push(`/admin/login`);
+      return;
+    }
+
     try {
-      const token = localStorage.getItem("admin_token");
-      if (!token) {
-        router.push(`/admin/login`);
-        return;
-      }
       const headers = { Authorization: `Bearer ${token}` };
 
-      const [eventsRes, metricsRes] = await Promise.all([
+      const [eventsRes, aggregatedMetricsRes] = await Promise.all([
         fetch(`${API_URL}/admin/events`, { headers }),
         fetch(`${API_URL}/admin/metrics`, { headers }),
       ]);
 
-      if (eventsRes.status === 401 || metricsRes.status === 401) {
+      if ([eventsRes, aggregatedMetricsRes].some((res) => res.status === 401)) {
         handleLogout();
         return;
       }
 
-      setEvents(await eventsRes.json());
+      // --- INÍCIO DA CORREÇÃO ---
 
-      const metricsData: Metric[] = await metricsRes.json();
+      // Processa os dados com segurança
+      const eventsData = await eventsRes.json();
+      const aggregatedData = await aggregatedMetricsRes.json();
 
-      // --- Buscar nomes apenas para IDs únicos ---
-      const userIds = Array.from(
-        new Set(metricsData.filter((m) => m.user_id).map((m) => m.user_id!))
-      );
-      const userNamesMap = await fetchUserNames(userIds);
+      // Garante que os estados sempre recebam arrays
+      setEvents(Array.isArray(eventsData) ? eventsData : []);
+      setAggregatedMetrics(Array.isArray(aggregatedData) ? aggregatedData : []);
 
-      const metricsWithNames = metricsData.map((m) => ({
-        ...m,
-        user_name: m.user_id ? userNamesMap[m.user_id] : "Anônimo",
-      }));
-
-      setMetrics(
-        metricsWithNames.filter((m) => ["search", "register"].includes(m.type))
-      );
+      // --- FIM DA CORREÇÃO ---
     } catch (err) {
-      console.error(err);
+      console.error("Falha ao buscar dados do dashboard:", err);
+      // Garante que em caso de erro de rede, os estados sejam arrays vazios
       setEvents([]);
-      setMetrics([]);
+      setAggregatedMetrics([]);
+      setActivityMetrics([]);
     } finally {
       setLoading(false);
     }
-  }, [router, fetchUserNames]);
+  }, [router, handleLogout]);
 
   useEffect(() => {
     fetchAllData();
   }, [fetchAllData]);
 
-  // --- Criar usuário ---
-  const handleCreateUser = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setCreatingUser(true);
-    setUserMsg(null);
-    try {
-      const token = localStorage.getItem("admin_token") || "";
-      const res = await fetch(`${API_URL}/users`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(newUser),
-      });
+  // --- Cálculos Memoizados (agora muito mais simples) ---
 
-      if (!res.ok)
-        throw new Error((await res.json()).detail || "Erro ao criar usuário");
-
-      setUserMsg({ text: "Usuário criado com sucesso!", ok: true });
-      setNewUser({ name: "", email: "", password: "", role: "user" });
-      fetchAllData();
-    } catch (err: unknown) {
-      if (err instanceof Error) setUserMsg({ text: err.message, ok: false });
-      else setUserMsg({ text: "Erro inesperado", ok: false });
-    } finally {
-      setCreatingUser(false);
-    }
-  };
-
-  // --- Métricas totais ---
+  // KPIs: Total de pesquisas e cadastros
   const { totalSearches, totalRegisters } = useMemo(
     () => ({
-      totalSearches: metrics
-        .filter((m) => m.type === "search")
-        .reduce((sum, m) => sum + m.count, 0),
-      totalRegisters: metrics
-        .filter((m) => m.type === "register")
-        .reduce((sum, m) => sum + m.count, 0),
+      totalSearches: aggregatedMetrics.reduce((sum, m) => sum + m.pesquisas, 0),
+      totalRegisters: aggregatedMetrics.reduce(
+        (sum, m) => sum + m.cadastros,
+        0
+      ),
     }),
-    [metrics]
+    [aggregatedMetrics]
   );
 
-  // --- Limite de tempo ---
-  const getTimeLimit = () => {
+  // Dados para o gráfico de Top 5 Eventos
+  const eventPerformanceData = useMemo(() => {
+    const performance: Record<string, { name: string; searches: number }> = {};
+
+    aggregatedMetrics.forEach((metric) => {
+      if (metric.event_slug) {
+        if (!performance[metric.event_slug]) {
+          performance[metric.event_slug] = {
+            name:
+              events.find((e) => e.slug === metric.event_slug)?.title ||
+              metric.event_slug,
+            searches: 0,
+          };
+        }
+        performance[metric.event_slug].searches += metric.pesquisas;
+      }
+    });
+
+    return Object.values(performance)
+      .sort((a, b) => b.searches - a.searches)
+      .slice(0, 5);
+  }, [aggregatedMetrics, events]);
+
+  // Dados para a tabela de Métricas por Usuário
+  const userMetrics = useMemo(() => {
+    const metricsByUser: Record<
+      string,
+      { user: string; searches: number; registers: number }
+    > = {};
+
+    aggregatedMetrics.forEach((metric) => {
+      const userName = metric.user_name || "Anônimo";
+      if (!metricsByUser[userName]) {
+        metricsByUser[userName] = { user: userName, searches: 0, registers: 0 };
+      }
+      metricsByUser[userName].searches += metric.pesquisas;
+      metricsByUser[userName].registers += metric.cadastros;
+    });
+
+    return Object.values(metricsByUser).sort(
+      (a, b) => b.searches + b.registers - (a.searches + a.registers)
+    );
+  }, [aggregatedMetrics]);
+
+  // Dados do gráfico de atividade (lógica inalterada, mas agora usa 'activityMetrics')
+  const activityChartData = useMemo(() => {
     const now = new Date();
+    let limitDate;
     switch (timeRange) {
       case "1h":
-        return new Date(now.getTime() - 1 * 60 * 60 * 1000);
-      case "3h":
-        return new Date(now.getTime() - 3 * 60 * 60 * 1000);
-      case "5h":
-        return new Date(now.getTime() - 5 * 60 * 60 * 1000);
-      case "8h":
-        return new Date(now.getTime() - 8 * 60 * 60 * 1000);
-      case "10h":
-        return new Date(now.getTime() - 10 * 60 * 60 * 1000);
-      case "12h":
-        return new Date(now.getTime() - 12 * 60 * 60 * 1000);
+        limitDate = new Date(now.getTime() - 1 * 60 * 60 * 1000);
+        break;
       case "24h":
-        return new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        limitDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        break;
       case "3D":
-        return subDays(now, 3);
+        limitDate = subDays(now, 3);
+        break;
       case "7D":
-        return subDays(now, 7);
+        limitDate = subDays(now, 7);
+        break;
       default:
-        return new Date(now.getTime() - 1 * 60 * 60 * 1000);
+        limitDate = subDays(now, 1);
     }
-  };
 
-  // --- Dados do gráfico de atividade ---
-  const activityChartData = useMemo(() => {
-    const limitDate = getTimeLimit();
-    const filteredMetrics = metrics.filter(
+    const filteredMetrics = activityMetrics.filter(
       (m) => parseISO(m.created_at) >= limitDate
     );
 
     const groupedData = filteredMetrics.reduce((acc, metric) => {
       const metricDate = parseISO(metric.created_at);
-      const isHourRange = [
-        "1h",
-        "3h",
-        "5h",
-        "8h",
-        "10h",
-        "12h",
-        "24h",
-      ].includes(timeRange);
-      const dayKey = isHourRange
-        ? format(metricDate, "HH:mm")
+      const isHourRange = ["1h", "24h"].includes(timeRange);
+      const key = isHourRange
+        ? format(metricDate, "HH:00")
         : format(metricDate, "dd/MM");
 
-      if (!acc[dayKey])
-        acc[dayKey] = { day: dayKey, searches: 0, registers: 0 };
+      if (!acc[key]) {
+        acc[key] = { time: key, searches: 0, registers: 0, date: metricDate };
+      }
 
-      if (metric.type === "search") acc[dayKey].searches += metric.count;
-      if (metric.type === "register") acc[dayKey].registers += metric.count;
+      if (metric.type === "search") acc[key].searches += metric.count;
+      if (metric.type === "register") acc[key].registers += metric.count;
 
       return acc;
-    }, {} as Record<string, { day: string; searches: number; registers: number }>);
+    }, {} as Record<string, { time: string; searches: number; registers: number; date: Date }>);
 
-    return Object.values(groupedData).sort((a, b) => {
-      const aMetric = filteredMetrics.find(
-        (m) =>
-          (["1h", "3h", "5h", "8h", "10h", "12h", "24h"].includes(timeRange)
-            ? format(parseISO(m.created_at), "HH:mm")
-            : format(parseISO(m.created_at), "dd/MM")) === a.day
-      )!;
-      const bMetric = filteredMetrics.find(
-        (m) =>
-          (["1h", "3h", "5h", "8h", "10h", "12h", "24h"].includes(timeRange)
-            ? format(parseISO(m.created_at), "HH:mm")
-            : format(parseISO(m.created_at), "dd/MM")) === b.day
-      )!;
-      return (
-        parseISO(aMetric.created_at).getTime() -
-        parseISO(bMetric.created_at).getTime()
-      );
-    });
-  }, [metrics, timeRange]);
+    return Object.values(groupedData).sort(
+      (a, b) => a.date.getTime() - b.date.getTime()
+    );
+  }, [activityMetrics, timeRange]);
 
-  // --- Top 5 eventos por engajamento ---
-  const eventPerformanceData = useMemo(() => {
-    const performance = metrics.reduce((acc, metric) => {
-      const slug = metric.event_slug || "N/A";
-      if (!acc[slug])
-        acc[slug] = {
-          name: events.find((e) => e.slug === slug)?.title || slug,
-          searches: 0,
-        };
-      if (metric.type === "search") acc[slug].searches += metric.count;
-      return acc;
-    }, {} as Record<string, { name: string; searches: number }>);
-
-    return Object.values(performance)
-      .sort((a, b) => b.searches - a.searches)
-      .slice(0, 5);
-  }, [metrics, events]);
-
-  // --- Métricas por usuário ---
-  const userMetrics = useMemo(() => {
-    const grouped: Record<string, { searches: number; registers: number }> = {};
-    metrics.forEach((m) => {
-      const user = m.user_name || m.user_id || "Anônimo";
-      if (!grouped[user]) grouped[user] = { searches: 0, registers: 0 };
-      if (m.type === "search") grouped[user].searches += m.count;
-      if (m.type === "register") grouped[user].registers += m.count;
-    });
-    return Object.entries(grouped).map(([user, data]) => ({ user, ...data }));
-  }, [metrics]);
-
-  // --- Loading ---
+  // --- Renderização ---
   if (loading) return <LoadingSpinner />;
 
   return (
     <main className="bg-gray-100 min-h-screen p-4 sm:p-6 md:p-8 space-y-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <header className="flex justify-between items-center">
+        <header className="flex flex-wrap justify-between items-center gap-4">
           <div>
             <h1 className="text-3xl md:text-4xl font-bold text-gray-800">
               Painel do Administrador
@@ -361,12 +286,20 @@ export default function AdminDashboardPage() {
               Métricas e gerenciamento de eventos.
             </p>
           </div>
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-red-600 bg-red-100 rounded-lg shadow-sm hover:bg-red-200 transition-colors"
-          >
-            <PowerIcon className="h-5 w-5" /> Sair
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={fetchAllData}
+              className="p-2 text-gray-500 hover:text-blue-600 hover:bg-gray-200 rounded-full transition-colors"
+            >
+              <ArrowPathIcon className="h-6 w-6" />
+            </button>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-red-600 bg-red-100 rounded-lg shadow-sm hover:bg-red-200 transition-colors"
+            >
+              <PowerIcon className="h-5 w-5" /> Sair
+            </button>
+          </div>
         </header>
 
         {/* KPIs */}
@@ -383,6 +316,25 @@ export default function AdminDashboardPage() {
           />
         </div>
 
+        {/* NOVA ÁREA: Dashboards por Evento */}
+        <section className="mt-8 space-y-4">
+          <h2 className="text-2xl font-semibold text-gray-700">
+            Painel de Eventos
+          </h2>
+          {events.length > 0 ? (
+            events.map((event) => (
+              <EventDashboardAccordion
+                key={event.slug}
+                event={event}
+                onRefreshed={fetchAllData}
+                metrics={aggregatedMetrics} // Passe todas as métricas agregadas
+              />
+            ))
+          ) : (
+            <p className="text-gray-500">Nenhum evento encontrado.</p>
+          )}
+        </section>
+
         {/* Gráficos */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 mt-8">
           {/* Atividade na Plataforma */}
@@ -392,95 +344,88 @@ export default function AdminDashboardPage() {
                 Atividade na Plataforma
               </h2>
               <div className="flex space-x-2">
-                {["1h", "3h", "5h", "8h", "10h", "12h", "24h", "3D", "7D"].map(
-                  (range) => (
-                    <button
-                      key={range}
-                      onClick={() => setTimeRange(range as typeof timeRange)}
-                      className={`px-3 py-1 text-sm rounded-md ${
-                        timeRange === range
-                          ? "bg-blue-600 text-white"
-                          : "bg-gray-200 text-gray-700"
-                      }`}
-                    >
-                      {range}
-                    </button>
-                  )
-                )}
+                {["1h", "24h", "3D", "7D"].map((range) => (
+                  <button
+                    key={range}
+                    onClick={() => setTimeRange(range as typeof timeRange)}
+                    className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                      timeRange === range
+                        ? "bg-blue-600 text-white"
+                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                    }`}
+                  >
+                    {range}
+                  </button>
+                ))}
               </div>
             </div>
-            <div style={{ width: "100%", height: 300 }}>
-              <ResponsiveContainer>
-                <LineChart data={activityChartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                  <XAxis
-                    dataKey="day"
-                    fontSize={12}
-                    tick={{ fill: "#6b7280" }}
-                  />
-                  <YAxis tick={{ fill: "#6b7280" }} fontSize={12} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "#fff",
-                      border: "1px solid #ddd",
-                    }}
-                  />
-                  <Legend wrapperStyle={{ fontSize: "14px" }} />
-                  <Line
-                    type="monotone"
-                    dataKey="searches"
-                    name="Pesquisas"
-                    stroke="#3b82f6"
-                    strokeWidth={2}
-                    dot={{ r: 4 }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="registers"
-                    name="Cadastros"
-                    stroke="#f97316"
-                    strokeWidth={2}
-                    dot={{ r: 4 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={activityChartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                <XAxis
+                  dataKey="time"
+                  fontSize={12}
+                  tick={{ fill: "#6b7280" }}
+                />
+                <YAxis tick={{ fill: "#6b7280" }} fontSize={12} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "#fff",
+                    border: "1px solid #ddd",
+                  }}
+                />
+                <Legend wrapperStyle={{ fontSize: "14px" }} />
+                <Line
+                  type="monotone"
+                  dataKey="searches"
+                  name="Pesquisas"
+                  stroke="#3b82f6"
+                  strokeWidth={2}
+                  dot={{ r: 4 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="registers"
+                  name="Cadastros"
+                  stroke="#f97316"
+                  strokeWidth={2}
+                  dot={{ r: 4 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
           </section>
 
           {/* Top 5 Eventos */}
           <section className="lg:col-span-2 bg-white p-6 rounded-xl shadow">
             <h2 className="text-xl font-semibold mb-4 text-gray-700">
-              Top 5 Eventos por Engajamento
+              Top 5 Eventos (por pesquisas)
             </h2>
-            <div style={{ width: "100%", height: 300 }}>
-              <ResponsiveContainer>
-                <BarChart data={eventPerformanceData} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                  <XAxis type="number" hide />
-                  <YAxis
-                    type="category"
-                    dataKey="name"
-                    width={120}
-                    fontSize={12}
-                    tick={{ fill: "#6b7280" }}
-                  />
-                  <Tooltip
-                    cursor={{ fill: "rgba(243,244,246,0.5)" }}
-                    contentStyle={{
-                      backgroundColor: "#fff",
-                      border: "1px solid #ddd",
-                    }}
-                  />
-                  <Legend wrapperStyle={{ fontSize: "14px" }} />
-                  <Bar
-                    dataKey="searches"
-                    name="Pesquisas"
-                    stackId="a"
-                    fill="#3b82f6"
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart
+                data={eventPerformanceData}
+                layout="vertical"
+                margin={{ right: 20 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                <XAxis type="number" tick={{ fill: "#6b7280" }} fontSize={12} />
+                <YAxis
+                  type="category"
+                  dataKey="name"
+                  width={100}
+                  fontSize={12}
+                  tick={{ fill: "#6b7280" }}
+                  interval={0}
+                />
+                <Tooltip
+                  cursor={{ fill: "rgba(243,244,246,0.5)" }}
+                  contentStyle={{
+                    backgroundColor: "#fff",
+                    border: "1px solid #ddd",
+                  }}
+                />
+                <Bar dataKey="searches" name="Pesquisas" fill="#3b82f6" />
+              </BarChart>
+            </ResponsiveContainer>
           </section>
         </div>
 
@@ -489,32 +434,32 @@ export default function AdminDashboardPage() {
           <h2 className="text-2xl font-semibold mb-4 text-gray-700">
             Métricas por Usuário
           </h2>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto max-h-96">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+              <thead className="bg-gray-50 sticky top-0">
                 <tr>
-                  <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Usuário
                   </th>
-                  <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Pesquisas
                   </th>
-                  <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Cadastros
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {userMetrics.map((u) => (
-                  <tr key={u.user} className="hover:bg-gray-50">
-                    <td className="px-4 py-2 text-sm text-gray-800">
-                      {u.user}
+                {userMetrics.map(({ user, searches, registers }) => (
+                  <tr key={user} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {user}
                     </td>
-                    <td className="px-4 py-2 text-sm text-gray-800">
-                      {u.searches}
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                      {searches}
                     </td>
-                    <td className="px-4 py-2 text-sm text-gray-800">
-                      {u.registers}
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                      {registers}
                     </td>
                   </tr>
                 ))}
@@ -524,14 +469,20 @@ export default function AdminDashboardPage() {
         </section>
 
         {/* Forms */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
-          <section className="bg-white p-6 rounded-xl shadow">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-8">
+          <section className="bg-white p-6 rounded-xl shadow lg:col-span-1">
             <h2 className="text-2xl font-semibold mb-4 text-gray-700">
-              Criar Novo Evento
+              Criar Evento
             </h2>
             <CreateEventForm onCreated={fetchAllData} />
           </section>
-          <section className="bg-white p-6 rounded-xl shadow">
+          <section className="bg-white p-6 rounded-xl shadow lg:col-span-1">
+            <h2 className="text-2xl font-semibold mb-4 text-gray-700">
+              Criar Fotógrafo
+            </h2>
+            <CreatePhotographerForm events={events} />
+          </section>
+          <section className="bg-white p-6 rounded-xl shadow lg:col-span-1">
             <h2 className="text-2xl font-semibold mb-4 text-gray-700">
               Upload de Fotos
             </h2>
@@ -541,12 +492,11 @@ export default function AdminDashboardPage() {
               onUploaded={fetchAllData}
             />
           </section>
-
-          <section className="bg-white p-6 rounded-xl shadow">
+          <section className="bg-white p-6 rounded-xl shadow lg:col-span-2">
             <h2 className="text-2xl font-semibold mb-4 text-gray-700">
-              Criar Novo Fotógrafo
+              Upload de Mídia
             </h2>
-            <CreatePhotographerForm events={events} />
+            <UploadMediaForm events={events} onUploaded={fetchAllData} />
           </section>
         </div>
       </div>

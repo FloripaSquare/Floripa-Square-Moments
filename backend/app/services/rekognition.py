@@ -1,6 +1,7 @@
 import boto3
 import os
 import re
+from concurrent.futures import ThreadPoolExecutor
 
 rk = boto3.client(
     "rekognition",
@@ -24,25 +25,23 @@ def ensure_collection(event_slug: str) -> str:
 
 
 def sanitize_key_for_rekognition(s: str) -> str:
-    # Esta função agora é usada tanto no upload quanto na indexação para garantir consistência.
-    # Ela remove caracteres que a API do Rekognition não aceita.
     safe = re.sub(r"[^a-zA-Z0-9_.:-]", "_", s)
     return safe[:100]
 
 
-def index_s3_object(event_slug: str, bucket: str, file_key: str):
+# --- ALTERAÇÃO 1: A assinatura da função foi atualizada ---
+def index_s3_object(event_slug: str, bucket: str, file_key: str, external_image_id: str):
+    """
+    Indexa uma face no Rekognition usando um ExternalImageId explícito.
+    """
     collection_id = ensure_collection(event_slug)
 
-    # <--- LÓGICA CORRETA RESTAURADA ---
-    # Extraímos o nome do arquivo da chave S3 e o sanitizamos.
-    # Como o nome no S3 já foi sanitizado no upload, esta chamada garante
-    # consistência e que o ID seja sempre válido para a API.
-    ext_id = sanitize_key_for_rekognition(file_key.split("/")[-1])
+    # A linha que calculava o ext_id foi removida para evitar dupla sanitização.
 
     return rk.index_faces(
         CollectionId=collection_id,
         Image={"S3Object": {"Bucket": bucket, "Name": file_key}},
-        ExternalImageId=ext_id,
+        ExternalImageId=external_image_id,  # Usa o ID recebido diretamente
         DetectionAttributes=[],
         MaxFaces=80,
         QualityFilter="AUTO",
@@ -59,17 +58,20 @@ def search_by_image_bytes(event_slug: str, data: bytes, max_faces: int = 50, thr
     )
 
 
+# --- ALTERAÇÃO 2: A função de reindexar foi atualizada para usar a nova lógica ---
 def reindex_all(event_slug: str, bucket: str, keys: list[str]):
     """
-    Reindexa todas as fotos de um evento.
+    Reindexa todas as fotos de um evento, garantindo a consistência do ID.
     """
-    from concurrent.futures import ThreadPoolExecutor
 
     def _index(key):
         try:
-            index_s3_object(event_slug, bucket, key)
+            # Extrai o nome do arquivo da chave S3 para usar como o ID explícito
+            image_id = key.split("/")[-1]
+            index_s3_object(event_slug, bucket, key, image_id)
+            print(f"Reindexado com sucesso: {key}")
         except Exception as e:
-            print(f"Erro ao indexar {key}: {e}")
+            print(f"Erro ao reindexar {key}: {e}")
 
     with ThreadPoolExecutor(max_workers=5) as executor:
         executor.map(_index, keys)

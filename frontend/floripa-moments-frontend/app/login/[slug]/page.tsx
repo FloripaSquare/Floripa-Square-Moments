@@ -63,7 +63,7 @@ export default function UserLoginPage() {
         }}
       >
         <div className="w-full max-w-md p-6 rounded-md">
-          <h1 className="text-2xl font-bold mb-6 text-center text-white-800">
+          <h1 className="text-2xl font-bold mb-6 text-center text-white">
             Login
           </h1>
 
@@ -81,7 +81,7 @@ export default function UserLoginPage() {
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-sm font-bold text-white-700 mb-1">
+              <label className="block text-sm font-bold text-white mb-1">
                 Email
               </label>
               <input
@@ -95,7 +95,7 @@ export default function UserLoginPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-white-700 mb-1">
+              <label className="block text-sm font-bold text-white mb-1">
                 Senha
               </label>
               <input
