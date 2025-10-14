@@ -55,103 +55,118 @@ export default function SelfiePage() {
     }
   };
 
+  // AJUSTADO: Padding vertical (py) reduzido para botões mais compactos
   const buttonClasses =
-    "w-full max-w-[16rem] px-4 py-3 rounded-md font-semibold uppercase text-center transition duration-200 ease-in-out";
+    "w-full max-w-[16rem] px-4 py-2.5 rounded-md font-semibold uppercase text-center transition duration-200 ease-in-out";
 
   return (
-    <main className="relative w-full h-screen flex items-center justify-center">
+    <main className="relative w-full h-screen flex flex-col items-center justify-center p-4">
       {/* Background */}
       <div
         className="absolute inset-0 bg-cover bg-center"
         style={{
-          backgroundColor: "rgba(0,0,0,0.3)",
-          backgroundBlendMode: "overlay",
           backgroundImage: isFloripaSquare
             ? "url('/bg-form-moments.png')"
             : "url('/bg-form.png')",
         }}
       />
 
-      <div className="relative z-10 flex flex-col items-center justify-center w-full h-full text-center gap-6 px-4">
-        {/* Texto introdutório */}
-        <div className="max-w-[16rem] text-white text-center space-y-2">
-          <p className="font-semibold text-lg">
-            Olá, que bom que você está no Rooftop Floripa Square.
-          </p>
-          <p className="text-sm">
-            Esta é a sua galeria oficial de fotos no evento, para que você
-            compartilhe com suas redes sociais conteúdos, momentos e insights.
-          </p>
-          <p className="text-sm">
-            Para começar, tire uma selfie (ou selecione da galeria) e depois
-            clique no botão ENVIAR & BUSCAR FOTOS.
-          </p>
+      {/* AJUSTADO: Container principal agora usa justify-between para empurrar conteúdo para o topo e para o fundo */}
+      <div className="relative z-10 flex flex-col items-center justify-between w-full h-full text-center py-8">
+        {/* NOVO: Wrapper para o conteúdo principal, que pode rolar se necessário */}
+        <div className="w-full flex flex-col items-center gap-4 overflow-y-auto px-4">
+          <div className="max-w-[16rem] text-white text-center space-y-2">
+            <p className="font-semibold text-lg">
+              Olá, que bom que você está no Rooftop Floripa Square.
+            </p>
+            <p className="text-sm">
+              Esta é a sua galeria oficial de fotos no evento, para que você
+              compartilhe com suas redes sociais conteúdos, momentos e insights.
+            </p>
+            <p className="text-sm">
+              Para começar, tire uma selfie (ou selecione da galeria) e depois
+              clique no botão ENVIAR & BUSCAR FOTOS.
+            </p>
+          </div>
+
+          {/* Área da Selfie (comportamento condicional) */}
+          {!selfiePreview ? (
+            <label
+              className={`${buttonClasses} border-2 border-white text-white hover:bg-white hover:text-blue-900 cursor-pointer`}
+            >
+              Tirar Selfie
+              <input
+                type="file"
+                accept="image/*"
+                capture="user"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+            </label>
+          ) : (
+            <div className="flex flex-col items-center gap-3">
+              <Image
+                src={selfiePreview}
+                width={160} // AJUSTADO: Tamanho da imagem um pouco menor
+                height={160}
+                alt="Selfie"
+                unoptimized
+                className="rounded-md border-2 border-white shadow-md w-[160px] h-[160px] object-cover"
+                onClick={() => window.open(selfiePreview, "_blank")}
+              />
+              <p className="text-white text-[10px] font-semibold max-w-[15rem] text-center leading-relaxed">
+                Importante: por motivos de privacidade, não armazenaremos sua
+                selfie.
+              </p>
+              <button
+                type="button"
+                className={`${buttonClasses} text-sm`} // AJUSTADO: Botão um pouco menor
+                onClick={() => {
+                  setSelfie(null);
+                  setSelfiePreview(null);
+                }}
+              >
+                Trocar foto
+              </button>
+            </div>
+          )}
+
+          <canvas ref={canvasRef} className="hidden" />
+
+          {/* Botão de enviar (ação primária) */}
+          <button
+            onClick={handleSubmit}
+            disabled={loading || !selfie}
+            className={`${buttonClasses} bg-[#f37021] border-[#f37021] text-white hover:bg-orange-600 disabled:opacity-50`}
+          >
+            {loading ? "Enviando..." : "Enviar & Buscar Fotos"}
+          </button>
         </div>
 
-        {/* Botão Tirar Selfie (abre câmera/galeria) */}
-        {!selfiePreview && (
-          <label
-            className={`${buttonClasses} border-2 border-white text-white hover:bg-white hover:text-blue-900 cursor-pointer`}
+        {/* NOVO: Wrapper para os botões de navegação secundária, agora na parte inferior */}
+        <div className="w-full flex flex-col items-center gap-2 mt-4">
+          <button
+            type="button"
+            className={`${buttonClasses} text-sm border-2 border-white/50 bg-white/10 text-white hover:bg-white/20`}
+            onClick={() => router.push(`/${slug}/pesquisa`)}
           >
-            Tirar Selfie
-            <input
-              type="file"
-              accept="image/*"
-              capture="user"
-              className="hidden"
-              onChange={handleFileChange}
-            />
-          </label>
-        )}
-
-        {/* Preview da selfie */}
-        {selfiePreview && (
-          <div className="flex flex-col items-center gap-2">
-            <Image
-              src={selfiePreview}
-              width={200}
-              height={200}
-              alt="Selfie"
-              unoptimized
-              className="rounded-md border-2 border-white shadow-md w-[200px] h-[200px] object-cover"
-              onClick={() => window.open(selfiePreview, "_blank")}
-            />
-
-            <p className="text-white text-[8px] font-semibold max-w-[15rem] text-center leading-relaxed">
-              Importante: por motivos de privacidade, não armazenaremos sua
-              selfie. Salve uma ou tire uma a cada vez que for buscar por fotos.
-            </p>
-
-            <button
-              type="button"
-              className={`${buttonClasses} border-2 border-white text-white hover:bg-white hover:text-blue-900`}
-              onClick={() => {
-                setSelfie(null);
-                setSelfiePreview(null);
-              }}
-            >
-              Trocar foto
-            </button>
-          </div>
-        )}
-
-        <canvas ref={canvasRef} className="hidden" />
-
-        {/* Botão de enviar */}
-        <button
-          onClick={handleSubmit}
-          disabled={loading || !selfie}
-          className={`${buttonClasses} border-2 border-white text-white hover:bg-white hover:text-blue-900 disabled:opacity-50`}
-        >
-          {loading ? "Enviando..." : "Enviar & Buscar Fotos"}
-        </button>
-        <button
-          type="button"
-          className={`${buttonClasses} border-2 border-white text-white hover:bg-white hover:text-blue-900`}
-          onClick={() => router.push(`/${slug}/pesquisa`)}
-        >
-          Pesquisa de Satisfação
-        </button>
+            Pesquisa de Satisfação
+          </button>
+          <button
+            type="button"
+            className={`${buttonClasses} text-sm border-2 border-white/50 bg-white/10 text-white hover:bg-white/20`}
+            onClick={() => router.push(`/${slug}/gerais`)}
+          >
+            Fotos Gerais
+          </button>
+          <button
+            type="button"
+            className={`${buttonClasses} text-sm border-2 border-white/50 bg-white/10 text-white hover:bg-white/20`}
+            onClick={() => router.push(`/${slug}/videos`)}
+          >
+            Vídeos
+          </button>
+        </div>
       </div>
     </main>
   );

@@ -1,12 +1,19 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
   images: {
     remotePatterns: [
+      // Permite URLs como photo-find-raw.s3.amazonaws.com
       {
         protocol: "https",
-        hostname: "*.s3.amazonaws.com",
+        hostname: "**.s3.amazonaws.com",
+        pathname: "/**",
+      },
+      // Permite URLs com região, ex: photo-find-raw.s3.us-east-1.amazonaws.com
+      {
+        protocol: "https",
+        hostname: "**.s3.*.amazonaws.com",
+        pathname: "/**",
       },
     ],
   },
