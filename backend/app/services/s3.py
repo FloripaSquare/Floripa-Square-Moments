@@ -67,3 +67,21 @@ def list_keys_in_prefix(bucket: str, prefix: str) -> list[str]:
     except (BotoCoreError, ClientError) as e:
         print(f"Erro ao listar objetos no S3: {e}")
     return keys
+
+
+async def list_s3_files(prefix: str, bucket: str = BUCKET_RAW):
+    """
+    Lista arquivos do S3 dado um prefixo.
+    Se bucket não for informado, usa BUCKET_RAW do settings.
+    """
+    items = []
+    try:
+        resp = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
+        for obj in resp.get("Contents", []):
+            key = obj["Key"]
+            url = f"https://{bucket}.s3.{settings.AWS_REGION}.amazonaws.com/{key}"
+            items.append({"key": key.split("/")[-1], "url": url})
+    except (BotoCoreError, ClientError) as e:
+        print(f"Erro ao listar objetos no S3: {e}")
+    return items
+

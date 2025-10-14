@@ -13,7 +13,6 @@ import time
 
 router = APIRouter()
 
-
 @router.post("/{event_slug}", response_model=SearchOut)
 async def search_faces(
     event_slug: str,
@@ -53,7 +52,6 @@ async def search_faces(
 
     duration = time.time() - start_time
 
-    # --- exemplo de track atualizado ---
     await track(
     conn,
     action="search",
