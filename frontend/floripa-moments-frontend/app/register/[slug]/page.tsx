@@ -10,7 +10,6 @@ interface FormData {
   last_name: string;
   email: string;
   password: string;
-  confirm_password: string;
   whatsapp: string;
   instagram: string;
   accepted_lgpd: boolean;
@@ -42,7 +41,6 @@ export default function RegisterPage() {
     last_name: "",
     email: "",
     password: "",
-    confirm_password: "",
     whatsapp: "",
     instagram: "",
     accepted_lgpd: false,
@@ -127,11 +125,6 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
-    if (form.password !== form.confirm_password) {
-      setMsg({ text: "Senhas não conferem", ok: false });
-      return;
-    }
 
     const requiredConsents: (keyof FormData)[] = consentItems
       .filter((item) => item.required)
@@ -280,26 +273,14 @@ export default function RegisterPage() {
             required
           />
 
-          <div className="flex flex-col sm:flex-row gap-3">
-            <input
-              type="password"
-              placeholder="Senha"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              className={inputClass}
-              required
-            />
-            <input
-              type="password"
-              placeholder="Confirme a senha"
-              value={form.confirm_password}
-              onChange={(e) =>
-                setForm({ ...form, confirm_password: e.target.value })
-              }
-              className={inputClass}
-              required
-            />
-          </div>
+          <input
+            type="password"
+            placeholder="Senha"
+            value={form.password}
+            onChange={(e) => setForm({ ...form, password: e.target.value })}
+            className={inputClass}
+            required
+          />
 
           <input
             type="tel"
@@ -309,6 +290,7 @@ export default function RegisterPage() {
             maxLength={15}
             className={inputClass}
           />
+
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
               @
@@ -324,6 +306,7 @@ export default function RegisterPage() {
                 })
               }
               className={`${inputClass} pl-7`}
+              required
             />
           </div>
 

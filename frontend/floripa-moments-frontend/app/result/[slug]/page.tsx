@@ -11,6 +11,7 @@ type SearchOut = { count: number; items: SearchItem[] };
 
 // --- Função Utilitária para a Métrica (sem alterações) ---
 async function trackDownloadIntent(slug: string, fileName: string) {
+  console.log("Tracking download intent for:", fileName);
   const token = localStorage.getItem("user_token");
   if (!token) {
     console.warn(
@@ -20,7 +21,7 @@ async function trackDownloadIntent(slug: string, fileName: string) {
   }
   try {
     const API_URL = process.env.NEXT_PUBLIC_API_URL;
-    await fetch(`${API_URL}/metrics/download`, {
+    await fetch(`${API_URL}/admin/metrics/download`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -34,7 +35,7 @@ async function trackDownloadIntent(slug: string, fileName: string) {
   }
 }
 
-// --- Componente do Card da Imagem (VERSÃO DEFINITIVA) ---
+// --- Componente do Card da Imagem (VERSÃO DEFINITIVA COM MENU NATIVO) ---
 const ImageCard = memo(function ImageCard({
   item,
   selected,
@@ -46,47 +47,72 @@ const ImageCard = memo(function ImageCard({
   toggleSelect: (key: string) => void;
   slug: string;
 }) {
-  const handleOpenImage = () => window.open(item.url, "_blank");
+  const [showSaveHint, setShowSaveHint] = useState(false);
+  const pressTimer = useRef<NodeJS.Timeout | null>(null);
 
+  // Inicia quando o usuário TOCA ou CLICA
+  const handleInteractionStart = () => {
+    pressTimer.current = setTimeout(() => {
+      // 🥇 A MÉTRICA É DISPARADA AQUI, ao confirmar a intenção
+      trackDownloadIntent(slug, item.key);
+      setShowSaveHint(true);
+    }, 500); // Meio segundo para o "long press"
+  };
+
+  // Termina quando o usuário SOLTA o dedo/mouse
+  const handleInteractionEnd = () => {
+    if (pressTimer.current) {
+      clearTimeout(pressTimer.current);
+    }
+    setShowSaveHint(false);
+  };
+
+  // Fallback para clique direito no desktop
   const handleContextMenu = (e: React.MouseEvent) => {
-    // Log para confirmar que o evento foi capturado no console do NAVEGADOR
-    console.log("Context Menu Event Fired! Tracking download for:", item.key);
+    // Impede o menu nativo de aparecer se a nossa UI já estiver visível (evita conflito)
+    if (showSaveHint) e.preventDefault();
     trackDownloadIntent(slug, item.key);
-    // Não usamos e.preventDefault() para que o menu nativo do navegador apareça.
   };
 
   return (
-    // O container não tem mais `aspect-square`, permitindo alturas variadas.
-    <div className="group relative w-full overflow-hidden rounded-lg bg-gray-200 shadow-lg">
-      {/* 1. Usamos a tag <img> padrão. É o segredo para o masonry e para o evento funcionarem. */}
+    <div
+      className="group relative w-full overflow-hidden rounded-lg bg-gray-200 shadow-lg"
+      // Eventos para mobile e desktop no container principal
+      onTouchStart={handleInteractionStart}
+      onTouchEnd={handleInteractionEnd}
+      onTouchCancel={handleInteractionEnd} // Garante limpeza se o toque for interrompido
+      onMouseDown={handleInteractionStart}
+      onMouseUp={handleInteractionEnd}
+      onMouseLeave={handleInteractionEnd}
+      onContextMenu={handleContextMenu}
+    >
       <img
         src={item.url}
         alt={`Foto da busca`}
-        className="w-full h-auto object-cover transition-all duration-300 group-hover:brightness-75"
+        className="w-full h-auto object-cover"
         loading="lazy"
-        // 2. O listener de evento está DIRETAMENTE na imagem.
-        onContextMenu={handleContextMenu}
       />
 
-      {/* 3. A UI fica por cima. O z-index garante a sobreposição. */}
+      {/* Checkbox de seleção (sem alterações) */}
       <input
         type="checkbox"
         checked={selected}
         onChange={() => toggleSelect(item.key)}
-        className="absolute top-2 left-2 z-10 h-5 w-5 cursor-pointer accent-blue-500"
+        className="absolute top-2 left-2 z-20 h-5 w-5 cursor-pointer accent-blue-500"
       />
-      <button
-        onClick={handleOpenImage}
-        title="Abrir esta foto em nova aba"
-        className="absolute bottom-2 right-2 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/80 text-gray-800 opacity-0 shadow-md transition-all duration-300 group-hover:opacity-100 hover:scale-110 hover:bg-white"
-      >
-        <ArrowDownTrayIcon className="h-6 w-6" />
-      </button>
+
+      {/* ✅ NOSSA NOVA UI DE AVISO - Ela é "transparente" a eventos de mouse/toque */}
+      {showSaveHint && (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-black/50 backdrop-blur-sm text-white font-semibold pointer-events-none">
+          <ArrowDownTrayIcon className="h-8 w-8" />
+          <span>Solte para ver opções</span>
+        </div>
+      )}
     </div>
   );
 });
 
-// --- Componente Principal da Página (com layout masonry) ---
+// --- Componente Principal da Página (sem alterações na lógica principal) ---
 export default function ResultPage() {
   const params = useParams<{ slug?: string }>();
   const router = useRouter();
@@ -174,7 +200,7 @@ export default function ResultPage() {
       selectedKeys.has(item.key)
     );
     for (const item of selectedItems) {
-      trackDownloadIntent(slug, item.key);
+      await trackDownloadIntent(slug, item.key);
       try {
         const response = await fetch(item.url);
         const blob = await response.blob();
@@ -206,20 +232,20 @@ export default function ResultPage() {
             {searchResult.count} foto{searchResult.count !== 1 ? "s" : ""}{" "}
             encontrada{searchResult.count !== 1 ? "s" : ""}
           </h1>
-          <p className="text-gray-600">
-            Pressione por alguns segundos a foto para opções de download
+          <p className="text-center text-sm text-gray-600 sm:text-base">
+            Pressione e segure a foto para salvar
           </p>
           {selectedKeys.size > 0 && (
             <button
               onClick={downloadSelected}
-              className="flex items-center gap-2 rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+              className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white shadow-md transition-colors hover:bg-blue-700"
             >
               <ArrowDownTrayIcon className="h-5 w-5" />
               Baixar selecionadas ({selectedKeys.size})
             </button>
           )}
         </header>
-        {/* Layout Masonry com colunas */}
+
         <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-3 space-y-3">
           {displayItems.map((item) => (
             <div key={item.key} className="break-inside-avoid">
@@ -232,6 +258,7 @@ export default function ResultPage() {
             </div>
           ))}
         </div>
+
         <div ref={loaderRef} className="flex h-20 items-center justify-center">
           {displayItems.length < searchResult.items.length && (
             <ArrowPathIcon className="h-8 w-8 animate-spin text-gray-400" />
