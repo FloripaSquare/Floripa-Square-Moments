@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, Query
+import traceback
+
+from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
 from app.security.jwt import require_any_user
@@ -38,21 +40,38 @@ async def list_metrics(
 
 @router.post("/download", status_code=204)
 async def log_download_metric(
-    payload: DownloadMetricIn,
-    conn: AsyncSession = Depends(get_conn),
-    token_data: dict = Depends(require_any_user)
+        payload: DownloadMetricIn,
+        conn: AsyncSession = Depends(get_conn),
+        token_data: dict = Depends(require_any_user)
 ):
+    # ✅ TESTE: Esta linha tem que aparecer no seu terminal
+    print("\n>>> ROTA /DOWNLOAD ACIONADA - EXECUTANDO CÓDIGO NOVO <<<\n")
+
     user_id = token_data.get("user_id")
 
-    await add_metric(
-        conn,
-        MetricIn(
+    try:
+        metric_to_create = MetricIn(
             event_slug=payload.event_slug,
             type="download_photo",
             user_id=user_id,
-            details={"file_name": payload.file_name}
+            data={"file_name": payload.file_name}
         )
-    )
-    # Não precisa de commit aqui se 'add_metric' já adiciona à sessão
-    await conn.commit()
-    return
+
+        await add_metric(conn, metric_to_create)
+        await conn.commit()
+
+    except Exception as e:
+        # 🛑 Se houver um erro, este bloco será executado
+        print("\n!!!!!!!!!! ERRO AO SALVAR MÉTRICA !!!!!!!!!!")
+        print(f"TIPO DO ERRO: {type(e)}")
+        print(f"DETALHES: {e}")
+        print("--- TRACEBACK COMPLETO ---")
+        traceback.print_exc()
+        print("------------------------------------------\n")
+
+        await conn.rollback()
+        raise HTTPException(status_code=500, detail="Erro interno ao salvar métrica.")
+
+    return None
+
+
