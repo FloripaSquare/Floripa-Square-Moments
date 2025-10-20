@@ -108,8 +108,8 @@ export default function SelfiePage() {
               suas redes sociais momentos incríveis.
             </p>
             <p className="text-sm">
-              Para começar, tire uma selfie (ou selecione da galeria) e depois
-              clique no botão ENVIAR & BUSCAR FOTOS.
+              Para começar, tire uma selfie e depois clique no botão ENVIAR &
+              BUSCAR FOTOS.
             </p>
           </div>
 
