@@ -37,7 +37,6 @@ async def list_metrics(
     metrics = await get_metrics(conn, user_id=user_id, event_slug=event_slug, limit=limit, offset=offset)
     return [MetricOut.model_validate(m) for m in metrics]
 
-
 @router.post("/download", status_code=204)
 async def log_download_metric(
         payload: DownloadMetricIn,
@@ -45,7 +44,7 @@ async def log_download_metric(
         token_data: dict = Depends(require_any_user)
 ):
     # ✅ TESTE: Esta linha tem que aparecer no seu terminal
-    print("\n>>> ROTA /DOWNLOAD ACIONADA - EXECUTANDO CÓDIGO NOVO <<<\n")
+    print("\n>>> ROTA /admin/metrics/download ACIONADA <<<\n")
 
     user_id = token_data.get("user_id")
 

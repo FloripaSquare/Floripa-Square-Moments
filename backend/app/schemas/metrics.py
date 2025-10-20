@@ -31,10 +31,14 @@ class MetricOut(MetricIn):
     created_at: str
 
 class AdminMetricSummary(BaseModel):
-    event_slug: Optional[str] = None # Adicionado o campo do evento
+    event_slug: Optional[str] = None
     user_name: str
+    email: Optional[str] = None       # Adicionado
+    instagram: Optional[str] = None   # Adicionado
+    whatsapp: Optional[str] = None    # Adicionado
     pesquisas: int
     cadastros: int
+    downloads: int
 
     class Config:
         from_attributes = True
