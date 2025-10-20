@@ -94,7 +94,7 @@ export default function SelfiePage() {
       />
 
       {/* Conteúdo rolável */}
-      <div className="relative z-10 w-full flex-grow overflow-y-auto flex flex-col items-center px-4 pt-20 pb-10">
+      <div className="relative z-10 w-full flex-grow overflow-y-auto flex flex-col items-center px-4 pt-25 pb-10">
         {/* Texto e selfie */}
         <div className="flex flex-col items-center gap-4 w-full">
           <div
