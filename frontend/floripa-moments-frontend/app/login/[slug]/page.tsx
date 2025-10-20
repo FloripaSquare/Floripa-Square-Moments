@@ -4,11 +4,62 @@ import { useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Footer from "@/components/Footer";
 
+// --- Tema ---
+interface Theme {
+  name: string;
+  backgroundImage: string;
+  textColor: string;
+  inputBg: string;
+  inputBorder: string;
+  placeholderColor: string;
+  buttonBg: string;
+  buttonTextColor: string;
+  buttonBorder: string;
+  alertErrorBg: string;
+  alertErrorText: string;
+  alertSuccessBg: string;
+  alertSuccessText: string;
+}
+
+const themes: Record<string, Theme> = {
+  "floripa-square": {
+    name: "Floripa Square",
+    backgroundImage: "url('/base-moments.jpg')",
+    textColor: "text-white",
+    inputBg: "bg-white/90",
+    inputBorder: "border-white/50",
+    placeholderColor: "placeholder-gray-400",
+    buttonBg: "bg-[#f37021]",
+    buttonTextColor: "text-white",
+    buttonBorder: "border-[#f37021]",
+    alertErrorBg: "bg-red-50",
+    alertErrorText: "text-red-700",
+    alertSuccessBg: "bg-green-50",
+    alertSuccessText: "text-green-700",
+  },
+  default: {
+    name: "Default",
+    backgroundImage: "url('/bg-form.png')",
+    textColor: "text-gray-900",
+    inputBg: "bg-gray-100",
+    inputBorder: "border-gray-400",
+    placeholderColor: "placeholder-gray-400",
+    buttonBg: "bg-blue-700",
+    buttonTextColor: "text-white",
+    buttonBorder: "border-blue-700",
+    alertErrorBg: "bg-red-50",
+    alertErrorText: "text-red-700",
+    alertSuccessBg: "bg-green-50",
+    alertSuccessText: "text-green-700",
+  },
+};
+
 export default function UserLoginPage() {
   const router = useRouter();
   const params = useParams<{ slug?: string }>();
-  const slug = params?.slug;
-  const isFloripaSquare = slug === "floripa-square";
+  const slug = params?.slug ?? "default";
+
+  const theme = themes[slug] || themes.default;
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -36,12 +87,10 @@ export default function UserLoginPage() {
       }
 
       const data = await res.json();
-
       localStorage.setItem("user_token", data.access_token);
 
       setAlert({ type: "success", message: "Login realizado com sucesso!" });
 
-      // Redireciona para a página de selfie / busca
       setTimeout(() => router.push(`/${slug}/selfie`), 800);
     } catch (err: unknown) {
       if (err instanceof Error)
@@ -56,14 +105,12 @@ export default function UserLoginPage() {
     <>
       <main
         className="min-h-screen flex flex-col items-center justify-center p-8 bg-cover bg-center"
-        style={{
-          backgroundImage: isFloripaSquare
-            ? "url('/bg-form-moments.png')"
-            : "url('/bg-form.png')",
-        }}
+        style={{ backgroundImage: theme.backgroundImage }}
       >
         <div className="w-full max-w-md p-6 rounded-md">
-          <h1 className="text-2xl font-bold mb-6 text-center text-white">
+          <h1
+            className={`text-2xl font-bold mb-6 text-center ${theme.textColor}`}
+          >
             Login
           </h1>
 
@@ -71,8 +118,8 @@ export default function UserLoginPage() {
             <div
               className={`flex items-center p-3 mb-4 rounded-md text-sm ${
                 alert.type === "error"
-                  ? "bg-red-50 text-red-700"
-                  : "bg-green-50 text-green-700"
+                  ? `${theme.alertErrorBg} ${theme.alertErrorText}`
+                  : `${theme.alertSuccessBg} ${theme.alertSuccessText}`
               }`}
             >
               <span>{alert.message}</span>
@@ -81,7 +128,9 @@ export default function UserLoginPage() {
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-sm font-bold text-white mb-1">
+              <label
+                className={`block text-sm font-bold mb-1 ${theme.textColor}`}
+              >
                 Email
               </label>
               <input
@@ -90,12 +139,14 @@ export default function UserLoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 placeholder="seu@email.com"
-                className="w-full bg-gray-100 border border-gray-400 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-400 focus:outline-none"
+                className={`w-full ${theme.inputBg} ${theme.inputBorder} border rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-900 ${theme.placeholderColor}`}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-white mb-1">
+              <label
+                className={`block text-sm font-bold mb-1 ${theme.textColor}`}
+              >
                 Senha
               </label>
               <input
@@ -104,14 +155,14 @@ export default function UserLoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 placeholder="********"
-                className="w-full bg-gray-100 border border-gray-400 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-400 focus:outline-none"
+                className={`w-full ${theme.inputBg} ${theme.inputBorder} border rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-900 ${theme.placeholderColor}`}
               />
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center items-center py-2 px-4  text-white font-semibold border border-white "
+              className={`w-full flex justify-center items-center py-2 px-4 font-semibold rounded-md ${theme.buttonBg} ${theme.buttonTextColor} border ${theme.buttonBorder}`}
             >
               {loading ? "Entrando..." : "Entrar"}
             </button>

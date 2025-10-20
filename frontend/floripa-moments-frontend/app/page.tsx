@@ -3,58 +3,57 @@
 import Footer from "@/components/Footer";
 import { useRouter, useParams } from "next/navigation";
 
+type Theme = {
+  backgroundImage: string;
+  primaryButtonClasses: string;
+  ghostButtonClasses: string;
+  textColor: string;
+};
+
+const themes: Record<string, Theme> = {
+  default: {
+    backgroundImage: 'url("/bg-moments.jpg")',
+    primaryButtonClasses: "",
+    ghostButtonClasses: "",
+    textColor: "text-white",
+  },
+};
+
 export default function SlugPage() {
   const router = useRouter();
   const params = useParams();
-  const slug = "floripa-square";
+  const slug = (params?.["slug"] as string) || "floripa-square";
+  const theme = themes.default;
 
-  const buttonStyle = {
-    width: "220px",
-    height: "50px",
-    borderRadius: "8px",
-    fontWeight: 600,
-    textTransform: "uppercase" as const,
-    transition: "all 0.3s ease",
-  };
-
-  const buttonClasses =
-    "w-full max-w-xs px-2 py-2 rounded-md font-semibold uppercase text-center transition duration-200 ease-in-out";
+  const baseButtonClasses =
+    "px-6 py-3 rounded-xl font-semibold uppercase text-center transition duration-300 ease-in-out shadow-lg";
 
   return (
-    <main className="relative w-full h-screen text-white">
-      <div
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: "url('/bg-moments.png')" }}
-      />
+    <main
+      className={`relative w-full min-h-screen overflow-hidden ${theme.textColor}`}
+      style={{
+        backgroundImage: theme.backgroundImage,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      }}
+    >
 
-      <div className="relative z-10 flex flex-col items-center justify-center w-full h-full text-center px-6 gap-4 pt-40">
-        {/* Botão de Cadastro (borda branca) */}
-        <button
-          style={{
-            ...buttonStyle,
-            backgroundColor: "transparent",
-            color: "white",
-            border: "2px solid white",
-          }}
-          onClick={() => router.push(`/register/${slug}`)}
-        >
-          Cadastrar
-        </button>
+      {/* Botão CADASTRAR */}
+      <button
+        className={`${baseButtonClasses} ${theme.ghostButtonClasses} absolute left-1/2 -translate-x-1/2 top-[47%] w-[60%]`}
+        onClick={() => router.push(`/register/${slug}`)}
+      >
+        Cadastrar
+      </button>
 
-        {/* Botão de Login (azul claro) */}
-        <button
-          style={{
-            ...buttonStyle,
-            backgroundColor: "#ffff",
-            color: "rgb(0, 0, 0,100%)",
-            border: "none",
-          }}
-          onClick={() => router.push(`/login/${slug}`)}
-        >
-          Login
-        </button>
-      </div>
-      <Footer />
+      {/* Botão LOGIN */}
+      <button
+        className={`${baseButtonClasses} ${theme.primaryButtonClasses} absolute left-1/2 -translate-x-1/2 top-[60%] w-[60%]`}
+        onClick={() => router.push(`/login/${slug}`)}
+      >
+        Login
+      </button>
     </main>
   );
 }

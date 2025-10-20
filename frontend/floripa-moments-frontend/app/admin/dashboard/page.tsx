@@ -8,7 +8,7 @@ import { API_URL } from "@/lib/api";
 import CreateEventForm from "@/components/events/CreateEventForm";
 import UploadPhotosForm from "@/components/events/UploadPhotosForm";
 import CreatePhotographerForm from "@/components/events/CreatePhotographerForm";
-import EventDashboardAccordion from "@/components/admin/EventDashboardAccordion"; // Importe o novo componente
+import EventDashboardAccordion from "@/components/admin/EventDashboardAccordion";
 import UploadMediaForm from "@/components/events/UploadMediaForm";
 
 import {
@@ -16,6 +16,8 @@ import {
   UserPlusIcon,
   ArrowPathIcon,
   PowerIcon,
+  ArrowDownTrayIcon,
+  CloudArrowUpIcon,
 } from "@heroicons/react/24/outline";
 import {
   LineChart,
@@ -33,7 +35,6 @@ import { subDays, format, parseISO } from "date-fns";
 
 // --- Tipos de Dados ---
 
-// Evento
 interface Event {
   slug: string;
   title: string;
@@ -42,22 +43,25 @@ interface Event {
   end_time: string;
 }
 
-// Métrica agregada retornada pela nova API /admin/metrics
+// ✅ FIX: Added missing user contact fields to resolve the type error.
 interface AggregatedMetric {
   event_slug: string | null;
   user_name: string;
+  email: string;
+  instagram?: string | null;
+  whatsapp?: string | null;
   pesquisas: number;
   cadastros: number;
+  downloads: number;
 }
 
-// Métrica bruta, necessária para o gráfico de atividade por tempo
 interface RawMetric {
-  type: "search" | "register";
+  type: "search" | "register" | "download_photo" | "upload_media";
   count: number;
   created_at: string;
 }
 
-// --- Componentes Reutilizáveis (sem alteração) ---
+// --- Componentes Reutilizáveis (sem alterações) ---
 function StatCard({
   title,
   value,
@@ -99,17 +103,14 @@ function LoadingSpinner() {
 export default function AdminDashboardPage() {
   const router = useRouter();
 
-  // --- Estados ---
   const [events, setEvents] = useState<Event[]>([]);
   const [aggregatedMetrics, setAggregatedMetrics] = useState<
     AggregatedMetric[]
   >([]);
-  // Estado separado para o gráfico de atividade, que precisa de dados brutos
   const [activityMetrics, setActivityMetrics] = useState<RawMetric[]>([]);
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState<"1h" | "24h" | "3D" | "7D">("24h");
 
-  // --- Funções de Autenticação ---
   const handleLogout = useCallback(() => {
     if (window.confirm("Tem certeza que deseja sair?")) {
       localStorage.removeItem("admin_token");
@@ -117,7 +118,6 @@ export default function AdminDashboardPage() {
     }
   }, [router]);
 
-  // --- Fetch de Dados Otimizado ---
   const fetchAllData = useCallback(async () => {
     setLoading(true);
     const token = localStorage.getItem("admin_token");
@@ -128,31 +128,31 @@ export default function AdminDashboardPage() {
 
     try {
       const headers = { Authorization: `Bearer ${token}` };
+      const [eventsRes, aggregatedMetricsRes, activityMetricsRes] =
+        await Promise.all([
+          fetch(`${API_URL}/admin/events`, { headers }),
+          fetch(`${API_URL}/admin/metrics`, { headers }),
+          fetch(`${API_URL}/admin/metrics/activity`, { headers }),
+        ]);
 
-      const [eventsRes, aggregatedMetricsRes] = await Promise.all([
-        fetch(`${API_URL}/admin/events`, { headers }),
-        fetch(`${API_URL}/admin/metrics`, { headers }),
-      ]);
-
-      if ([eventsRes, aggregatedMetricsRes].some((res) => res.status === 401)) {
+      if (
+        [eventsRes, aggregatedMetricsRes, activityMetricsRes].some(
+          (res) => res.status === 401
+        )
+      ) {
         handleLogout();
         return;
       }
 
-      // --- INÍCIO DA CORREÇÃO ---
-
-      // Processa os dados com segurança
       const eventsData = await eventsRes.json();
       const aggregatedData = await aggregatedMetricsRes.json();
+      const activityData = await activityMetricsRes.json();
 
-      // Garante que os estados sempre recebam arrays
       setEvents(Array.isArray(eventsData) ? eventsData : []);
       setAggregatedMetrics(Array.isArray(aggregatedData) ? aggregatedData : []);
-
-      // --- FIM DA CORREÇÃO ---
+      setActivityMetrics(Array.isArray(activityData) ? activityData : []);
     } catch (err) {
       console.error("Falha ao buscar dados do dashboard:", err);
-      // Garante que em caso de erro de rede, os estados sejam arrays vazios
       setEvents([]);
       setAggregatedMetrics([]);
       setActivityMetrics([]);
@@ -165,24 +165,24 @@ export default function AdminDashboardPage() {
     fetchAllData();
   }, [fetchAllData]);
 
-  // --- Cálculos Memoizados (agora muito mais simples) ---
-
-  // KPIs: Total de pesquisas e cadastros
-  const { totalSearches, totalRegisters } = useMemo(
+  // Cálculos Memoizados
+  const { totalSearches, totalRegisters, totalDownloads } = useMemo(
     () => ({
       totalSearches: aggregatedMetrics.reduce((sum, m) => sum + m.pesquisas, 0),
       totalRegisters: aggregatedMetrics.reduce(
         (sum, m) => sum + m.cadastros,
         0
       ),
+      totalDownloads: aggregatedMetrics.reduce(
+        (sum, m) => sum + m.downloads,
+        0
+      ),
     }),
     [aggregatedMetrics]
   );
 
-  // Dados para o gráfico de Top 5 Eventos
   const eventPerformanceData = useMemo(() => {
     const performance: Record<string, { name: string; searches: number }> = {};
-
     aggregatedMetrics.forEach((metric) => {
       if (metric.event_slug) {
         if (!performance[metric.event_slug]) {
@@ -196,19 +196,16 @@ export default function AdminDashboardPage() {
         performance[metric.event_slug].searches += metric.pesquisas;
       }
     });
-
     return Object.values(performance)
       .sort((a, b) => b.searches - a.searches)
       .slice(0, 5);
   }, [aggregatedMetrics, events]);
 
-  // Dados para a tabela de Métricas por Usuário
   const userMetrics = useMemo(() => {
     const metricsByUser: Record<
       string,
       { user: string; searches: number; registers: number }
     > = {};
-
     aggregatedMetrics.forEach((metric) => {
       const userName = metric.user_name || "Anônimo";
       if (!metricsByUser[userName]) {
@@ -217,13 +214,11 @@ export default function AdminDashboardPage() {
       metricsByUser[userName].searches += metric.pesquisas;
       metricsByUser[userName].registers += metric.cadastros;
     });
-
     return Object.values(metricsByUser).sort(
       (a, b) => b.searches + b.registers - (a.searches + a.registers)
     );
   }, [aggregatedMetrics]);
 
-  // Dados do gráfico de atividade (lógica inalterada, mas agora usa 'activityMetrics')
   const activityChartData = useMemo(() => {
     const now = new Date();
     let limitDate;
@@ -243,7 +238,6 @@ export default function AdminDashboardPage() {
       default:
         limitDate = subDays(now, 1);
     }
-
     const filteredMetrics = activityMetrics.filter(
       (m) => parseISO(m.created_at) >= limitDate
     );
@@ -256,21 +250,29 @@ export default function AdminDashboardPage() {
         : format(metricDate, "dd/MM");
 
       if (!acc[key]) {
-        acc[key] = { time: key, searches: 0, registers: 0, date: metricDate };
+        acc[key] = {
+          time: key,
+          searches: 0,
+          registers: 0,
+          downloads: 0,
+          uploads: 0,
+          date: metricDate,
+        };
       }
 
       if (metric.type === "search") acc[key].searches += metric.count;
       if (metric.type === "register") acc[key].registers += metric.count;
+      if (metric.type === "download_photo") acc[key].downloads += metric.count;
+      if (metric.type === "upload_media") acc[key].uploads += metric.count;
 
       return acc;
-    }, {} as Record<string, { time: string; searches: number; registers: number; date: Date }>);
+    }, {} as Record<string, { time: string; searches: number; registers: number; downloads: number; uploads: number; date: Date }>);
 
     return Object.values(groupedData).sort(
       (a, b) => a.date.getTime() - b.date.getTime()
     );
   }, [activityMetrics, timeRange]);
 
-  // --- Renderização ---
   if (loading) return <LoadingSpinner />;
 
   return (
@@ -303,7 +305,7 @@ export default function AdminDashboardPage() {
         </header>
 
         {/* KPIs */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
           <StatCard
             title="Total de Pesquisas"
             value={totalSearches}
@@ -314,9 +316,14 @@ export default function AdminDashboardPage() {
             value={totalRegisters}
             icon={UserPlusIcon}
           />
+          <StatCard
+            title="Total de Downloads"
+            value={totalDownloads}
+            icon={ArrowDownTrayIcon}
+          />
         </div>
 
-        {/* NOVA ÁREA: Dashboards por Evento */}
+        {/* Dashboards por Evento */}
         <section className="mt-8 space-y-4">
           <h2 className="text-2xl font-semibold text-gray-700">
             Painel de Eventos
@@ -327,7 +334,7 @@ export default function AdminDashboardPage() {
                 key={event.slug}
                 event={event}
                 onRefreshed={fetchAllData}
-                metrics={aggregatedMetrics} // Passe todas as métricas agregadas
+                metrics={aggregatedMetrics}
               />
             ))
           ) : (
@@ -388,6 +395,22 @@ export default function AdminDashboardPage() {
                   dataKey="registers"
                   name="Cadastros"
                   stroke="#f97316"
+                  strokeWidth={2}
+                  dot={{ r: 4 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="downloads"
+                  name="Downloads"
+                  stroke="#22c55e"
+                  strokeWidth={2}
+                  dot={{ r: 4 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="uploads"
+                  name="Uploads"
+                  stroke="#8b5cf6"
                   strokeWidth={2}
                   dot={{ r: 4 }}
                 />

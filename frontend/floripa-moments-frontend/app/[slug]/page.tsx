@@ -3,52 +3,68 @@
 import Footer from "@/components/Footer";
 import { useRouter, useParams } from "next/navigation";
 
+// ✅ 1. Interface e Objeto de Configuração de Temas
+// Centraliza todos os estilos que mudam de acordo com o evento.
+type Theme = {
+  backgroundImage: string;
+  primaryButtonClasses: string; // Botão principal, com preenchimento (Login)
+  ghostButtonClasses: string; // Botão secundário, com borda (Cadastrar)
+  textColor: string;
+};
+
+const themes: Record<string, Theme> = {
+  "floripa-square": {
+    backgroundImage: 'url("/bg-moments.jpg")', // Lembre-se de adicionar esta imagem na pasta /public
+    primaryButtonClasses:
+      "bg-white text-orange-600 font-bold hover:bg-gray-200",
+    ghostButtonClasses:
+      "border-2 border-white text-white hover:bg-white hover:text-orange-600",
+    textColor: "text-white",
+  },
+  default: {
+    // Tema padrão para "helisul" ou qualquer outro slug
+    backgroundImage: 'url("/bg-helisul.png")',
+    primaryButtonClasses:
+      "bg-cyan-400 text-blue-900 font-bold hover:bg-cyan-500",
+    ghostButtonClasses:
+      "border-2 border-white text-white hover:bg-white hover:text-blue-900",
+    textColor: "text-white",
+  },
+};
+
 export default function SlugPage() {
   const router = useRouter();
   const params = useParams();
   const slug = params?.["slug"] as string;
 
-  const buttonStyle = {
-    width: "220px",
-    height: "50px",
-    borderRadius: "8px",
-    fontWeight: 600,
-    textTransform: "uppercase" as const,
-    transition: "all 0.3s ease",
-  };
+  // ✅ 2. Seleciona o tema correto ou o padrão
+  const theme = themes[slug] || themes.default;
 
-  const buttonClasses =
-    "w-full max-w-xs px-2 py-2 rounded-md font-semibold uppercase text-center transition duration-200 ease-in-out";
+  // ✅ 3. Classes base para todos os botões para não repetir código
+  const baseButtonClasses =
+    "w-full max-w-xs px-4 py-3 rounded-md font-semibold uppercase text-center transition duration-300 ease-in-out shadow-lg";
 
   return (
-    <main className="relative w-full h-screen text-white">
+    <main className={`relative w-full h-screen ${theme.textColor}`}>
+      {/* ✅ 4. Fundo de tela dinâmico */}
       <div
         className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: "url('/bg-helisul.png')" }}
+        style={{ backgroundImage: theme.backgroundImage }}
       />
 
-      <div className="relative z-10 flex flex-col items-center justify-center w-full h-full text-center px-6 gap-4 pt-40">
-        {/* Botão de Cadastro (borda branca) */}
+      <div className="relative z-10 flex flex-col items-center justify-center w-full h-full text-center px-6 gap-4">
+        {/* ✅ 5. Botões agora usam classes do Tailwind vindas do tema */}
+        {/* Botão de Cadastro (estilo "ghost") */}
         <button
-          style={{
-            ...buttonStyle,
-            backgroundColor: "transparent",
-            color: "white",
-            border: "2px solid white",
-          }}
+          className={`${baseButtonClasses} ${theme.ghostButtonClasses}`}
           onClick={() => router.push(`/register/${slug}`)}
         >
           Cadastrar
         </button>
 
-        {/* Botão de Login (azul claro) */}
+        {/* Botão de Login (estilo "primary") */}
         <button
-          style={{
-            ...buttonStyle,
-            backgroundColor: "rgb(12, 212, 255)",
-            color: "rgb(10, 0, 127)",
-            border: "none",
-          }}
+          className={`${baseButtonClasses} ${theme.primaryButtonClasses}`}
           onClick={() => router.push(`/login/${slug}`)}
         >
           Login

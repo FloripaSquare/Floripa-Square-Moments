@@ -4,16 +4,42 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
 
+type Theme = {
+  backgroundImage?: string;
+  textColor: string;
+  primaryButton: string;
+  secondaryButton: string;
+  ghostButton: string;
+};
+
+const themes: Record<string, Theme> = {
+  "floripa-square": {
+    backgroundImage: "url('/base-moments.jpg')",
+    textColor: "text-white",
+    primaryButton: "bg-[#f37021] hover:bg-[#d35e1d] text-white",
+    secondaryButton: "bg-white/10 text-white hover:bg-white/20",
+    ghostButton:
+      "border-2 border-white text-white hover:bg-white hover:text-[#f37021]",
+  },
+  default: {
+    backgroundImage: 'url("/bg-form.png")',
+    textColor: "text-white",
+    primaryButton: "bg-[#f37021] hover:bg-orange-600 text-white",
+    secondaryButton: "bg-white/10 text-white hover:bg-white/20",
+    ghostButton:
+      "border-2 border-white text-white hover:bg-white hover:text-blue-900",
+  },
+};
+
 export default function SelfiePage() {
   const router = useRouter();
   const params = useParams<{ slug?: string }>();
-  const slug = params?.slug || "evento-teste";
-  const isFloripaSquare = slug === "floripa-square";
+  const slug = params?.slug || "default";
+  const theme = themes[slug] || themes.default;
 
   const [selfie, setSelfie] = useState<File | null>(null);
   const [selfiePreview, setSelfiePreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -55,33 +81,31 @@ export default function SelfiePage() {
     }
   };
 
-  // AJUSTADO: Padding vertical (py) reduzido para botões mais compactos
-  const buttonClasses =
-    "w-full max-w-[16rem] px-4 py-2.5 rounded-md font-semibold uppercase text-center transition duration-200 ease-in-out";
+  // --- Padronização dos botões ---
+  const baseButtonClasses =
+    "w-full max-w-md py-3 px-5 rounded-xl font-semibold text-sm md:text-base uppercase shadow-md transition-colors duration-200 ease-in-out disabled:opacity-50";
 
   return (
-    <main className="relative w-full h-screen flex flex-col items-center justify-center p-4">
-      {/* Background */}
+    <main className="relative w-full h-screen flex flex-col">
+      {/* Fundo */}
       <div
         className="absolute inset-0 bg-cover bg-center"
-        style={{
-          backgroundImage: isFloripaSquare
-            ? "url('/bg-form-moments.png')"
-            : "url('/bg-form.png')",
-        }}
+        style={{ backgroundImage: theme.backgroundImage }}
       />
 
-      {/* AJUSTADO: Container principal agora usa justify-between para empurrar conteúdo para o topo e para o fundo */}
-      <div className="relative z-10 flex flex-col items-center justify-between w-full h-full text-center py-8">
-        {/* NOVO: Wrapper para o conteúdo principal, que pode rolar se necessário */}
-        <div className="w-full flex flex-col items-center gap-4 overflow-y-auto px-4">
-          <div className="max-w-[16rem] text-white text-center space-y-2">
+      {/* Conteúdo rolável */}
+      <div className="relative z-10 w-full flex-grow overflow-y-auto flex flex-col items-center px-4 pt-20 pb-10">
+        {/* Texto e selfie */}
+        <div className="flex flex-col items-center gap-4 w-full">
+          <div
+            className={`max-w-[16rem] text-center space-y-2 ${theme.textColor}`}
+          >
             <p className="font-semibold text-lg">
-              Olá, que bom que você está no Rooftop Floripa Square.
+              Olá, que bom que você está no Rooftop!
             </p>
             <p className="text-sm">
-              Esta é a sua galeria oficial de fotos no evento, para que você
-              compartilhe com suas redes sociais conteúdos, momentos e insights.
+              Esta é a sua galeria oficial de fotos no evento. Compartilhe com
+              suas redes sociais momentos incríveis.
             </p>
             <p className="text-sm">
               Para começar, tire uma selfie (ou selecione da galeria) e depois
@@ -89,10 +113,9 @@ export default function SelfiePage() {
             </p>
           </div>
 
-          {/* Área da Selfie (comportamento condicional) */}
           {!selfiePreview ? (
             <label
-              className={`${buttonClasses} border-2 border-white text-white hover:bg-white hover:text-blue-900 cursor-pointer`}
+              className={`${baseButtonClasses} ${theme.ghostButton} cursor-pointer text-center`}
             >
               Tirar Selfie
               <input
@@ -107,20 +130,22 @@ export default function SelfiePage() {
             <div className="flex flex-col items-center gap-3">
               <Image
                 src={selfiePreview}
-                width={160} // AJUSTADO: Tamanho da imagem um pouco menor
+                width={160}
                 height={160}
                 alt="Selfie"
                 unoptimized
-                className="rounded-md border-2 border-white shadow-md w-[160px] h-[160px] object-cover"
+                className="rounded-xl border-2 border-white shadow-md w-[160px] h-[160px] object-cover"
                 onClick={() => window.open(selfiePreview, "_blank")}
               />
-              <p className="text-white text-[10px] font-semibold max-w-[15rem] text-center leading-relaxed">
+              <p
+                className={`text-[10px] font-semibold max-w-[15rem] text-center leading-relaxed ${theme.textColor}`}
+              >
                 Importante: por motivos de privacidade, não armazenaremos sua
                 selfie.
               </p>
               <button
                 type="button"
-                className={`${buttonClasses} text-sm`} // AJUSTADO: Botão um pouco menor
+                className={`${baseButtonClasses} ${theme.secondaryButton}`}
                 onClick={() => {
                   setSelfie(null);
                   setSelfiePreview(null);
@@ -133,35 +158,37 @@ export default function SelfiePage() {
 
           <canvas ref={canvasRef} className="hidden" />
 
-          {/* Botão de enviar (ação primária) */}
           <button
             onClick={handleSubmit}
             disabled={loading || !selfie}
-            className={`${buttonClasses} bg-[#f37021] border-[#f37021] text-white hover:bg-orange-600 disabled:opacity-50`}
+            className={`${baseButtonClasses} ${theme.primaryButton} mt-3`}
           >
             {loading ? "Enviando..." : "Enviar & Buscar Fotos"}
           </button>
         </div>
 
-        {/* NOVO: Wrapper para os botões de navegação secundária, agora na parte inferior */}
-        <div className="w-full flex flex-col items-center gap-2 mt-4">
+        {/* Separador */}
+        <div className="w-1/2 max-w-xs h-px bg-white/20 my-8" />
+
+        {/* Botões secundários */}
+        <div className="w-full flex flex-col items-center gap-3">
           <button
             type="button"
-            className={`${buttonClasses} text-sm border-2 border-white/50 bg-white/10 text-white hover:bg-white/20`}
+            className={`${baseButtonClasses} ${theme.secondaryButton}`}
             onClick={() => router.push(`/${slug}/pesquisa`)}
           >
             Pesquisa de Satisfação
           </button>
           <button
             type="button"
-            className={`${buttonClasses} text-sm border-2 border-white/50 bg-white/10 text-white hover:bg-white/20`}
+            className={`${baseButtonClasses} ${theme.secondaryButton}`}
             onClick={() => router.push(`/${slug}/gerais`)}
           >
             Fotos Gerais
           </button>
           <button
             type="button"
-            className={`${buttonClasses} text-sm border-2 border-white/50 bg-white/10 text-white hover:bg-white/20`}
+            className={`${baseButtonClasses} ${theme.secondaryButton}`}
             onClick={() => router.push(`/${slug}/videos`)}
           >
             Vídeos

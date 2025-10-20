@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState } from "react";
@@ -6,7 +7,7 @@ import {
   ChevronUpIcon,
   PencilIcon,
 } from "@heroicons/react/24/solid";
-import { API_URL } from "@/lib/api"; // Certifique-se de que este import existe
+import { API_URL } from "@/lib/api";
 
 // Componentes de Modal
 import EditEventModal from "./EditEventModal";
@@ -23,17 +24,21 @@ interface Event {
   participants_count?: number | null;
 }
 
-interface AggregatedMetric {
+interface UserActivityMetric {
   event_slug: string | null;
   user_name: string;
+  email: string;
+  instagram?: string | null;
+  whatsapp?: string | null;
   pesquisas: number;
   cadastros: number;
+  downloads: number;
 }
 
 interface Props {
   event: Event;
-  metrics: AggregatedMetric[];
-  onRefreshed: () => void; // Função para recarregar os dados do dashboard
+  metrics: UserActivityMetric[];
+  onRefreshed: () => void;
 }
 
 // --- Componente de Card de Estatística ---
@@ -62,23 +67,23 @@ export default function EventDashboardAccordion({
   const [isOpen, setIsOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
-
-  // ✅ Estados para a funcionalidade de download
+  const [isUserModalLoading, setIsUserModalLoading] = useState(false);
+  const [modalMetrics, setModalMetrics] = useState<UserActivityMetric[]>([]);
   const [downloadLink, setDownloadLink] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [copyButtonText, setCopyButtonText] = useState("COPIAR");
 
-  // Filtra e calcula as métricas apenas para este evento
+  // Cálculos de métricas (sem alteração)
   const eventMetrics = metrics.filter((m) => m.event_slug === event.slug);
   const totalCadastros = eventMetrics.reduce((sum, m) => sum + m.cadastros, 0);
   const totalAcessos = eventMetrics.reduce((sum, m) => sum + m.pesquisas, 0);
+  const totalDownloads = eventMetrics.reduce((sum, m) => sum + m.downloads, 0);
 
-  // Formata a data e o horário para exibição
+  // Formatação de data e hora (sem alteração)
   const eventDateFormatted = new Date(event.event_date).toLocaleDateString(
     "pt-BR",
     { timeZone: "UTC" }
   );
-
   const timeDisplay =
     event.start_time && event.end_time ? (
       `${event.start_time.slice(0, 5)} - ${event.end_time.slice(0, 5)}`
@@ -86,16 +91,33 @@ export default function EventDashboardAccordion({
       <span className="text-orange-500 font-normal">(Horário a definir)</span>
     );
 
-  // ✅ Função para chamar a API e gerar o link
+  // Função para buscar os dados detalhados para o modal de usuários
+  const handleOpenUserModal = async () => {
+    setIsUserModalOpen(true);
+    setIsUserModalLoading(true);
+    try {
+      const token = localStorage.getItem("admin_token");
+      const res = await fetch(`${API_URL}/admin/events/${event.slug}/metrics`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Falha ao buscar dados dos usuários.");
+      const data = await res.json();
+      setModalMetrics(data);
+    } catch (error) {
+      console.error(error);
+      alert("Não foi possível carregar os detalhes dos usuários.");
+      setIsUserModalOpen(false); // Fecha o modal em caso de erro
+    } finally {
+      setIsUserModalLoading(false);
+    }
+  };
+
+  // ✅ LÓGICA DE GERAR LINK RESTAURADA
   const handleGenerateLink = async () => {
     setIsGenerating(true);
     setDownloadLink("");
-    setCopyButtonText("COPIAR");
-
     try {
       const token = localStorage.getItem("admin_token");
-      if (!token) throw new Error("Token de admin não encontrado.");
-
       const res = await fetch(
         `${API_URL}/admin/events/${event.slug}/generate-download-link`,
         {
@@ -103,31 +125,26 @@ export default function EventDashboardAccordion({
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-
       if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.detail || "Falha ao gerar o link.");
+        const errorData = await res.json();
+        throw new Error(errorData.detail || "Falha ao gerar o link.");
       }
-
       const data = await res.json();
       setDownloadLink(data.url);
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        alert(`Erro: ${err.message}`);
-      } else {
-        alert(`Erro desconhecido: ${String(err)}`);
-      }
+    } catch (error: any) {
+      console.error(error);
+      alert(`Erro: ${error.message}`);
     } finally {
       setIsGenerating(false);
     }
   };
 
-  // ✅ Função para copiar o link gerado
+  // ✅ LÓGICA DE COPIAR LINK RESTAURADA
   const handleCopyLink = () => {
     if (!downloadLink) return;
     navigator.clipboard.writeText(downloadLink).then(() => {
       setCopyButtonText("COPIADO!");
-      setTimeout(() => setCopyButtonText("COPIAR"), 2000); // Reseta o texto após 2 segundos
+      setTimeout(() => setCopyButtonText("COPIAR"), 2000);
     });
   };
 
@@ -145,7 +162,6 @@ export default function EventDashboardAccordion({
               {eventDateFormatted} | {timeDisplay}
             </p>
           </div>
-
           <div className="flex items-center">
             <button
               onClick={() => setIsEditModalOpen(true)}
@@ -170,7 +186,6 @@ export default function EventDashboardAccordion({
         {/* Conteúdo do Acordeão */}
         {isOpen && (
           <div className="p-6 border-t border-gray-200 space-y-6">
-            {/* KPIs do Evento */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
               <EventStatCard
                 title="Participantes"
@@ -178,52 +193,42 @@ export default function EventDashboardAccordion({
               />
               <EventStatCard title="Cadastros" value={totalCadastros} />
               <EventStatCard title="Acessos" value={totalAcessos} />
-              <EventStatCard title="Downloads" value={"--"} />
-              <div
-                onClick={() => setIsUserModalOpen(true)}
-                className="cursor-pointer"
-              >
+              <EventStatCard title="Downloads" value={totalDownloads} />
+              <div onClick={handleOpenUserModal} className="cursor-pointer">
                 <EventStatCard title="Lista de Cadastros" value={"Ver"} />
               </div>
             </div>
 
-            {/* ✅ Seção de Download de Fotos Funcional */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Link para download de todas as fotos
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  readOnly
-                  value={
-                    downloadLink ||
-                    (isGenerating
-                      ? "Gerando link, por favor aguarde..."
-                      : "Clique em Gerar para criar o link")
-                  }
-                  className="flex-1 text-black bg-gray-100 border-gray-300 rounded-md shadow-sm text-sm p-2"
-                />
+            {/* ✅ Seção de Download de Fotos com a lógica restaurada */}
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h3 className="font-semibold text-gray-700">
+                Download de Todas as Fotos (.zip)
+              </h3>
+              <div className="flex flex-col sm:flex-row gap-2 mt-2">
                 <button
                   onClick={handleGenerateLink}
                   disabled={isGenerating}
-                  className="px-4 py-2 bg-gray-800 text-white font-semibold rounded-md hover:bg-gray-900 text-sm disabled:bg-gray-400 disabled:cursor-wait"
+                  className="w-full sm:w-auto flex-shrink-0 px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-wait"
                 >
-                  {isGenerating ? "GERANDO..." : "GERAR"}
+                  {isGenerating ? "Gerando..." : "Gerar Link"}
                 </button>
-                <button
-                  onClick={handleCopyLink}
-                  disabled={!downloadLink || isGenerating}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-md hover:bg-gray-300 text-sm disabled:bg-gray-300 disabled:text-gray-400"
-                >
-                  {copyButtonText}
-                </button>
+                {downloadLink && (
+                  <div className="flex-grow flex items-center bg-white border rounded-md p-1">
+                    <input
+                      type="text"
+                      value={downloadLink}
+                      readOnly
+                      className="w-full text-sm text-gray-600 p-1 border-none focus:ring-0"
+                    />
+                    <button
+                      onClick={handleCopyLink}
+                      className="px-3 py-1 text-xs font-bold text-white bg-gray-600 rounded hover:bg-gray-700"
+                    >
+                      {copyButtonText}
+                    </button>
+                  </div>
+                )}
               </div>
-              {downloadLink && (
-                <p className="text-xs text-orange-600 mt-1">
-                  Atenção: O link é temporário e expira em 1 hora.
-                </p>
-              )}
             </div>
           </div>
         )}
@@ -238,7 +243,9 @@ export default function EventDashboardAccordion({
       />
       <UserListModal
         isOpen={isUserModalOpen}
+        isLoading={isUserModalLoading}
         onClose={() => setIsUserModalOpen(false)}
+        metrics={modalMetrics}
         eventSlug={event.slug}
       />
     </>
