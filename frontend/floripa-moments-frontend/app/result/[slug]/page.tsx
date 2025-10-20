@@ -38,13 +38,9 @@ async function trackDownloadIntent(slug: string, fileName: string) {
 // --- Componente do Card da Imagem (VERSÃO DEFINITIVA COM MENU NATIVO) ---
 const ImageCard = memo(function ImageCard({
   item,
-  selected,
-  toggleSelect,
   slug,
 }: {
   item: SearchItem;
-  selected: boolean;
-  toggleSelect: (key: string) => void;
   slug: string;
 }) {
   const [showSaveHint, setShowSaveHint] = useState(false);
@@ -93,13 +89,7 @@ const ImageCard = memo(function ImageCard({
         loading="lazy"
       />
 
-      {/* Checkbox de seleção (sem alterações) */}
-      <input
-        type="checkbox"
-        checked={selected}
-        onChange={() => toggleSelect(item.key)}
-        className="absolute top-2 left-2 z-20 h-5 w-5 cursor-pointer accent-blue-500"
-      />
+      {/* Checkbox removido */}
 
       {/* ✅ NOSSA NOVA UI DE AVISO - Ela é "transparente" a eventos de mouse/toque */}
       {showSaveHint && (
@@ -112,13 +102,13 @@ const ImageCard = memo(function ImageCard({
   );
 });
 
-// --- Componente Principal da Página (sem alterações na lógica principal) ---
+// --- Componente Principal da Página ---
 export default function ResultPage() {
   const params = useParams<{ slug?: string }>();
   const router = useRouter();
   const [searchResult, setSearchResult] = useState<SearchOut | null>(null);
   const [displayItems, setDisplayItems] = useState<SearchItem[]>([]);
-  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+  // Estado 'selectedKeys' removido
   const loaderRef = useRef<HTMLDivElement | null>(null);
   const perPage = 24;
   const INACTIVITY_TIME = 5 * 60 * 1000;
@@ -185,38 +175,8 @@ export default function ResultPage() {
     };
   }, [searchResult]);
 
-  const toggleSelect = (key: string) => {
-    setSelectedKeys((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(key)) newSet.delete(key);
-      else newSet.add(key);
-      return newSet;
-    });
-  };
-
-  const downloadSelected = async () => {
-    if (!searchResult) return;
-    const selectedItems = searchResult.items.filter((item) =>
-      selectedKeys.has(item.key)
-    );
-    for (const item of selectedItems) {
-      await trackDownloadIntent(slug, item.key);
-      try {
-        const response = await fetch(item.url);
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = item.key.split("/").pop() || "foto.jpg";
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        window.URL.revokeObjectURL(url);
-      } catch (err) {
-        console.error("Erro ao baixar imagem:", err);
-      }
-    }
-  };
+  // Função 'toggleSelect' removida
+  // Função 'downloadSelected' removida
 
   if (!slug) return <StateMessage message="Nenhuma busca informada." />;
   if (!searchResult)
@@ -235,15 +195,7 @@ export default function ResultPage() {
           <p className="text-center text-sm text-gray-600 sm:text-base">
             Pressione e segure a foto para salvar
           </p>
-          {selectedKeys.size > 0 && (
-            <button
-              onClick={downloadSelected}
-              className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white shadow-md transition-colors hover:bg-blue-700"
-            >
-              <ArrowDownTrayIcon className="h-5 w-5" />
-              Baixar selecionadas ({selectedKeys.size})
-            </button>
-          )}
+          {/* Botão de download removido */}
         </header>
 
         <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-3 space-y-3">
@@ -251,9 +203,8 @@ export default function ResultPage() {
             <div key={item.key} className="break-inside-avoid">
               <ImageCard
                 item={item}
-                selected={selectedKeys.has(item.key)}
-                toggleSelect={toggleSelect}
                 slug={slug}
+                // Props 'selected' e 'toggleSelect' removidas
               />
             </div>
           ))}
