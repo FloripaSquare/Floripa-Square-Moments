@@ -3,15 +3,15 @@
 
 import { useState } from "react";
 
-// A importação do API_URL foi removida para resolver um erro de compilação.
 // Defina o URL da sua API aqui, idealmente a partir de variáveis de ambiente.
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.example.com";
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "https://api.moments-floripasquare.com.br";
 
-// ✅ 1. Interface atualizada com os novos campos
+// ✅ CORREÇÃO 1: A interface foi simplificada.
+// 'privacy_url' foi removido, pois é um valor derivado do 'slug' e não um estado.
 interface NewEvent {
   slug: string;
   title: string;
-  privacy_url?: string;
   event_date: string;
   participants_count: number | string; // Aceita string do input, mas será enviado como número
 }
@@ -21,11 +21,10 @@ interface CreateEventFormProps {
 }
 
 export default function CreateEventForm({ onCreated }: CreateEventFormProps) {
-  // ✅ 2. Estado inicial atualizado com a URL corrigida
+  // ✅ CORREÇÃO 2: O estado inicial agora reflete a nova interface, sem 'privacy_url'.
   const [newEvent, setNewEvent] = useState<NewEvent>({
     slug: "",
     title: "",
-    privacy_url: "",
     event_date: "",
     participants_count: "",
   });
@@ -53,14 +52,31 @@ export default function CreateEventForm({ onCreated }: CreateEventFormProps) {
       const token = localStorage.getItem("admin_token");
       if (!token) throw new Error("Token não encontrado");
 
-      // ✅ 3. Payload preparado com os novos campos e conversões necessárias
+      // --- INÍCIO DAS CORREÇÕES PRINCIPAIS ---
+
+      // ✅ CORREÇÃO 3: 'privacy_url' é construída dinamicamente aqui, no momento do envio.
+      // Isso garante que ela sempre corresponda ao 'slug' e seja uma URL válida ou null.
+      const constructedPrivacyUrl = newEvent.slug
+        ? `https://moments.floripasquare.com.br/${newEvent.slug}/privacy`
+        : null;
+
+      // ✅ CORREÇÃO 4: A lógica para 'participants_count' foi ajustada.
+      // Agora, uma string vazia ("") se torna 'null', mas o número 0 é preservado corretamente.
+      const participantsCount =
+        newEvent.participants_count === ""
+          ? null
+          : Number(newEvent.participants_count);
+
+      // ✅ CORREÇÃO 5: O payload final é montado com os valores corrigidos e formatados.
       const payload = {
-        ...newEvent,
-        // Garante que o valor seja um número ou nulo se o campo estiver vazio
-        participants_count: Number(newEvent.participants_count) || null,
-        // Garante que o valor seja nulo se a data não for preenchida
-        event_date: newEvent.event_date || null,
+        slug: newEvent.slug,
+        title: newEvent.title,
+        event_date: newEvent.event_date || null, // Garante que uma data vazia se torne null
+        privacy_url: constructedPrivacyUrl,
+        participants_count: participantsCount,
       };
+
+      // --- FIM DAS CORREÇÕES PRINCIPAIS ---
 
       const res = await fetch(`${API_URL}/admin/events`, {
         method: "POST",
@@ -73,15 +89,22 @@ export default function CreateEventForm({ onCreated }: CreateEventFormProps) {
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.detail || "Erro ao criar evento");
+        // Melhora a exibição de erros de validação do FastAPI
+        let detailedMessage = errorData.detail;
+        if (Array.isArray(errorData.detail)) {
+          detailedMessage = errorData.detail
+            .map((err: any) => `${err.loc.slice(-1)}: ${err.msg}`)
+            .join("; ");
+        }
+        throw new Error(detailedMessage || "Erro ao criar evento");
       }
 
       setMessage("✅ Evento criado com sucesso!");
-      // ✅ 4. Limpeza do formulário atualizada com a URL padrão corrigida
+
+      // ✅ CORREÇÃO 6: A limpeza do formulário agora corresponde ao estado simplificado.
       setNewEvent({
         slug: "",
         title: "",
-        privacy_url: `https://moments.floripasquare.com.br/${newEvent.slug}/privacy`,
         event_date: "",
         participants_count: "",
       });
@@ -144,7 +167,7 @@ export default function CreateEventForm({ onCreated }: CreateEventFormProps) {
         className="w-full px-3 py-2 border border-gray-300 rounded bg-gray-50 text-gray-600 text-sm"
       />
 
-      {/* ✅ 5. Novos campos adicionados ao formulário */}
+      {/* Novos campos adicionados ao formulário */}
       <div>
         <label
           htmlFor="event_date"
