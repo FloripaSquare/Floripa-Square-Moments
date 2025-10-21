@@ -73,9 +73,6 @@ export default function PhotographerPanel() {
           <h1 className="text-3xl font-bold text-gray-800">
             Painel do Fotógrafo
           </h1>
-          <p className="text-gray-600 mt-2">
-            Bem-vindo, <span className="font-medium">{userData.name}</span>
-          </p>
         </header>
 
         <section className="bg-white shadow-md rounded-lg p-6">

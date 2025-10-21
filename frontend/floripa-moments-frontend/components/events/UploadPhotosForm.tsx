@@ -71,10 +71,7 @@ export default function UploadPhotosForm({
         throw new Error(errorData.detail || "Erro ao enviar fotos");
       }
 
-      const data = await res.json();
-      setMessage(
-        `✅ ${data.uploaded_keys.length} foto(s) enviada(s) com sucesso!`
-      );
+      setMessage(`✅ foto(s) enviada(s) com sucesso!`);
 
       // Limpar seleção
       setSelectedFiles(null);
