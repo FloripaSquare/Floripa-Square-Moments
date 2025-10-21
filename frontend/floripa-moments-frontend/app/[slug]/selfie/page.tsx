@@ -22,12 +22,12 @@ const themes: Record<string, Theme> = {
       "border-2 border-white text-white hover:bg-white hover:text-[#f37021]",
   },
   default: {
-    backgroundImage: 'url("/bg-form.png")',
+    backgroundImage: "url('/base-moments.jpg')",
     textColor: "text-white",
-    primaryButton: "bg-[#f37021] hover:bg-orange-600 text-white",
+    primaryButton: "bg-[#f37021] hover:bg-[#d35e1d] text-white",
     secondaryButton: "bg-white/10 text-white hover:bg-white/20",
     ghostButton:
-      "border-2 border-white text-white hover:bg-white hover:text-blue-900",
+      "border-2 border-white text-white hover:bg-white hover:text-[#f37021]",
   },
 };
 
