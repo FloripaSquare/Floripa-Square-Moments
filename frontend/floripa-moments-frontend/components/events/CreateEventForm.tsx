@@ -162,7 +162,7 @@ export default function CreateEventForm({ onCreated }: CreateEventFormProps) {
       </p>
       <input
         type="text"
-        value={"https://moments.floripasquare.com.br/" + newEvent.slug}
+        value={"moments.floripasquare.com.br/" + newEvent.slug}
         readOnly
         className="w-full px-3 py-2 border border-gray-300 rounded bg-gray-50 text-gray-600 text-sm"
       />
