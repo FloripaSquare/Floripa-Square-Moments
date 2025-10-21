@@ -25,7 +25,7 @@ export default function CreateEventForm({ onCreated }: CreateEventFormProps) {
   const [newEvent, setNewEvent] = useState<NewEvent>({
     slug: "",
     title: "",
-    privacy_url: ``,
+    privacy_url: "",
     event_date: "",
     participants_count: "",
   });
