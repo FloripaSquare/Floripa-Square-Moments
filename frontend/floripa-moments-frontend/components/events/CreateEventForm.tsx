@@ -2,7 +2,10 @@
 "use client";
 
 import { useState } from "react";
-import { API_URL } from "@/lib/api";
+
+// A importação do API_URL foi removida para resolver um erro de compilação.
+// Defina o URL da sua API aqui, idealmente a partir de variáveis de ambiente.
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.example.com";
 
 // ✅ 1. Interface atualizada com os novos campos
 interface NewEvent {
@@ -18,11 +21,11 @@ interface CreateEventFormProps {
 }
 
 export default function CreateEventForm({ onCreated }: CreateEventFormProps) {
-  // ✅ 2. Estado inicial atualizado
+  // ✅ 2. Estado inicial atualizado com a URL corrigida
   const [newEvent, setNewEvent] = useState<NewEvent>({
     slug: "",
     title: "",
-    privacy_url: "https://www.moments.floripaquare.com.br/privacy-politcs",
+    privacy_url: ``,
     event_date: "",
     participants_count: "",
   });
@@ -74,11 +77,11 @@ export default function CreateEventForm({ onCreated }: CreateEventFormProps) {
       }
 
       setMessage("✅ Evento criado com sucesso!");
-      // ✅ 4. Limpeza do formulário atualizada
+      // ✅ 4. Limpeza do formulário atualizada com a URL padrão corrigida
       setNewEvent({
         slug: "",
         title: "",
-        privacy_url: "https://www.moments.floripaquare.com.br/privacy-politcs",
+        privacy_url: `https://moments.floripasquare.com.br/${newEvent.slug}/privacy`,
         event_date: "",
         participants_count: "",
       });
@@ -136,7 +139,7 @@ export default function CreateEventForm({ onCreated }: CreateEventFormProps) {
       </p>
       <input
         type="text"
-        value={"https://moments.floripaquare.com.br/" + newEvent.slug}
+        value={"https://moments.floripasquare.com.br/" + newEvent.slug}
         readOnly
         className="w-full px-3 py-2 border border-gray-300 rounded bg-gray-50 text-gray-600 text-sm"
       />
