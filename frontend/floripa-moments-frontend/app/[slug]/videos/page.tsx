@@ -2,14 +2,14 @@
 
 import { useParams } from "next/navigation";
 import { useEffect, useState, useRef, memo } from "react";
-import { ArrowPathIcon } from "@heroicons/react/24/solid";
+import { ArrowPathIcon, ArrowDownTrayIcon } from "@heroicons/react/24/solid";
 import Footer from "@/components/Footer";
 
 // --- Tipos ---
 type VideoItem = { key: string; url: string };
 type VideoOut = { count: number; items: VideoItem[] };
 
-// --- Card de vídeo simplificado ---
+// --- Card de vídeo ---
 const VideoCard = memo(function VideoCard({ item }: { item: VideoItem }) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -17,6 +17,24 @@ const VideoCard = memo(function VideoCard({ item }: { item: VideoItem }) {
     if (!videoRef.current) return;
     if (videoRef.current.paused) videoRef.current.play();
     else videoRef.current.pause();
+  };
+
+  const handleDownload = async (e: React.MouseEvent) => {
+    e.stopPropagation(); // evita que o clique acione play/pause
+    try {
+      const res = await fetch(item.url);
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = objectUrl;
+      a.download = item.key;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(objectUrl);
+    } catch (err) {
+      console.error("Erro ao baixar vídeo:", err);
+    }
   };
 
   return (
@@ -28,10 +46,17 @@ const VideoCard = memo(function VideoCard({ item }: { item: VideoItem }) {
         ref={videoRef}
         src={item.url}
         className="w-full object-cover transition-all duration-300 group-hover:scale-105"
-        muted
         playsInline
         loop
       />
+      {/* Botão de download */}
+      <button
+        onClick={handleDownload}
+        title="Baixar vídeo"
+        className="absolute bottom-2 right-2 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/80 text-gray-800 opacity-0 shadow-md transition-all duration-300 group-hover:opacity-100 hover:scale-110 hover:bg-white"
+      >
+        <ArrowDownTrayIcon className="h-6 w-6" />
+      </button>
     </div>
   );
 });
