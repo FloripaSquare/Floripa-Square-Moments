@@ -9,7 +9,7 @@ import Footer from "@/components/Footer";
 type VideoItem = { key: string; url: string };
 type VideoOut = { count: number; items: VideoItem[] };
 
-// --- Card de vídeo ---
+// --- Card de vídeo (mobile friendly) ---
 const VideoCard = memo(function VideoCard({ item }: { item: VideoItem }) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -22,30 +22,62 @@ const VideoCard = memo(function VideoCard({ item }: { item: VideoItem }) {
       : videoRef.current.pause();
   };
 
-  // Abrir vídeo em nova aba para visualização + download nativo do navegador
+  // Abrir vídeo em nova aba
   const handleOpenVideo = () => {
     window.open(item.url, "_blank");
   };
 
+  // Download do vídeo
+  const handleDownload = async () => {
+    try {
+      const res = await fetch(item.url);
+      if (!res.ok) throw new Error("Falha ao baixar vídeo");
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${item.key}.mp4`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Erro ao baixar vídeo:", err);
+      alert("❌ Falha ao baixar vídeo");
+    }
+  };
+
   return (
-    <div className="group relative w-full overflow-hidden rounded-lg bg-gray-200 shadow-lg">
+    <div className="relative w-full overflow-hidden rounded-lg bg-gray-200 shadow-lg">
       <video
         ref={videoRef}
         src={item.url}
-        className="w-full object-cover transition-all duration-300 group-hover:scale-105 cursor-pointer"
+        className="w-full object-cover cursor-pointer"
         playsInline
         loop
         preload="metadata"
         onClick={handlePlayPause}
       />
-      {/* Botão para abrir vídeo em nova aba */}
-      <button
-        onClick={handleOpenVideo}
-        title="Abrir vídeo em tela cheia / baixar"
-        className="absolute bottom-2 left-2 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/80 text-gray-800 opacity-0 shadow-md transition-all duration-300 group-hover:opacity-100 hover:scale-110 hover:bg-white"
-      >
-        <ArrowDownTrayIcon className="h-6 w-6" />
-      </button>
+
+      {/* Botões sempre visíveis em mobile */}
+      <div className="absolute bottom-2 left-2 flex gap-2 z-10">
+        <button
+          onClick={handleOpenVideo}
+          title="Abrir vídeo"
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-gray-800 shadow-md"
+        >
+          <ArrowPathIcon className="h-6 w-6" />
+        </button>
+
+        <button
+          onClick={handleDownload}
+          title="Baixar vídeo"
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-gray-800 shadow-md"
+        >
+          <ArrowDownTrayIcon className="h-6 w-6" />
+        </button>
+      </div>
     </div>
   );
 });
