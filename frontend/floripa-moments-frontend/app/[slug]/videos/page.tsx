@@ -12,6 +12,7 @@ type VideoOut = { count: number; items: VideoItem[] };
 // --- Card de vídeo (mobile friendly) ---
 const VideoCard = memo(function VideoCard({ item }: { item: VideoItem }) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   // Play / Pause com som
   const handlePlayPause = () => {
@@ -27,8 +28,9 @@ const VideoCard = memo(function VideoCard({ item }: { item: VideoItem }) {
     window.open(item.url, "_blank");
   };
 
-  // Download do vídeo
+  // Download do vídeo com loading
   const handleDownload = async () => {
+    setIsDownloading(true);
     try {
       const res = await fetch(item.url);
       if (!res.ok) throw new Error("Falha ao baixar vídeo");
@@ -45,6 +47,8 @@ const VideoCard = memo(function VideoCard({ item }: { item: VideoItem }) {
     } catch (err) {
       console.error("Erro ao baixar vídeo:", err);
       alert("❌ Falha ao baixar vídeo");
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -60,6 +64,14 @@ const VideoCard = memo(function VideoCard({ item }: { item: VideoItem }) {
         onClick={handlePlayPause}
       />
 
+      {/* Overlay de loading */}
+      {isDownloading && (
+        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/30">
+          <ArrowPathIcon className="h-12 w-12 animate-spin text-white" />
+          <span className="mt-2 text-white font-semibold">Baixando...</span>
+        </div>
+      )}
+
       {/* Botões sempre visíveis em mobile */}
       <div className="absolute bottom-2 left-2 flex gap-2 z-10">
         <button
@@ -73,7 +85,10 @@ const VideoCard = memo(function VideoCard({ item }: { item: VideoItem }) {
         <button
           onClick={handleDownload}
           title="Baixar vídeo"
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-gray-800 shadow-md"
+          disabled={isDownloading}
+          className={`flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-gray-800 shadow-md ${
+            isDownloading ? "opacity-50 cursor-not-allowed" : ""
+          }`}
         >
           <ArrowDownTrayIcon className="h-6 w-6" />
         </button>
