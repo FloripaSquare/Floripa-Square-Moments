@@ -13,14 +13,13 @@ type VideoOut = { count: number; items: VideoItem[] };
 const VideoCard = memo(function VideoCard({ item }: { item: VideoItem }) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  const handleTogglePlay = () => {
+  const handlePlayPause = () => {
     if (!videoRef.current) return;
     if (videoRef.current.paused) videoRef.current.play();
     else videoRef.current.pause();
   };
 
-  const handleDownload = async (e: React.MouseEvent) => {
-    e.stopPropagation(); // evita que o clique acione play/pause
+  const handleDownload = async () => {
     try {
       const res = await fetch(item.url);
       const blob = await res.blob();
@@ -38,22 +37,20 @@ const VideoCard = memo(function VideoCard({ item }: { item: VideoItem }) {
   };
 
   return (
-    <div
-      className="group relative w-full overflow-hidden rounded-lg bg-gray-200 shadow-lg cursor-pointer"
-      onClick={handleTogglePlay}
-    >
+    <div className="group relative w-full overflow-hidden rounded-lg bg-gray-200 shadow-lg">
       <video
         ref={videoRef}
         src={item.url}
-        className="w-full object-cover transition-all duration-300 group-hover:scale-105"
+        className="w-full object-cover transition-all duration-300 group-hover:scale-105 cursor-pointer"
         playsInline
         loop
+        onClick={handlePlayPause}
       />
       {/* Botão de download */}
       <button
         onClick={handleDownload}
         title="Baixar vídeo"
-        className="absolute bottom-2 right-2 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/80 text-gray-800 opacity-0 shadow-md transition-all duration-300 group-hover:opacity-100 hover:scale-110 hover:bg-white"
+        className="absolute bottom-2 left-2 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/80 text-gray-800 opacity-0 shadow-md transition-all duration-300 group-hover:opacity-100 hover:scale-110 hover:bg-white"
       >
         <ArrowDownTrayIcon className="h-6 w-6" />
       </button>

@@ -202,11 +202,11 @@ export default function SelfiePage() {
             type="button"
             className={`${baseButtonClasses} ${theme.secondaryButton}`}
             onClick={() => {
-              const token = localStorage.getItem("access_token");
+              const token = localStorage.getItem("user_token");
               const userId = localStorage.getItem("user_id");
 
               if (!token || !userId) {
-                router.push(`/${slug}/login`);
+                router.push(`/${slug}`);
               } else {
                 router.push(`/${slug}/comments`);
               }

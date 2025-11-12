@@ -38,7 +38,10 @@ export default function EventCommentsList({
       setError(null);
       try {
         // endpoint no mesmo padrão que você usou antes
-        const res = await fetch(`${API_URL}/comments/${eventSlug}`);
+        const res = await fetch(`${API_URL}/comments/${eventSlug}`, {
+          credentials: "include",
+        });
+
         if (!res.ok) {
           throw new Error(`Erro ao buscar comentários (${res.status})`);
         }
