@@ -14,7 +14,7 @@ from app.services.s3 import put_bytes, BUCKET_RAW, presign_get
 from app.services.rekognition import index_s3_object, sanitize_key_for_rekognition
 
 router = APIRouter()
-MAX_SIZE_MB = 200
+MAX_SIZE_MB = 1000
 ALLOWED_FORMATS = {"jpeg", "png", "jpg"}
 
 
@@ -91,13 +91,7 @@ async def upload_photos_batch(
             "uploader_id": uploader_id,
             "event_slug": event_slug,
             "s3_key": res["s3_key"],
-            #
-            # ▼▼▼ CORREÇÃO 1: NÃO SALVAR A URL TEMPORÁRIA NO BANCO ▼▼▼
-            #
-            "s3_url": None,  # Salva None. A s3_key é a única fonte da verdade.
-            #
-            # ▲▲▲ FIM DA CORREÇÃO 1 ▲▲▲
-            #
+            "s3_url": None,
             "status": "active",
         })
 
@@ -116,9 +110,7 @@ async def upload_photos_batch(
     # Pega os resultados do select
     newly_created_photos = result.all()
 
-    #
-    # ▼▼▼ CORREÇÃO 2: GERAR URLS FRESCAS 'AO VIVO' SÓ PARA A RESPOSTA ▼▼▼
-    #
+
     response_data = []
     for photo_row in newly_created_photos:
         # Converte a "Row" do SQLAlchemy para um dict

@@ -15,8 +15,8 @@ from app.security.jwt import require_any_user
 import imghdr
 
 router = APIRouter()
-MAX_SIZE_MB = 15
-MAX_MEDIA_SIZE_MB = 10000  # Tamanho maior para vídeos e fotos gerais
+MAX_SIZE_MB = 1000
+MAX_MEDIA_SIZE_MB = 3000  # Tamanho maior para vídeos e fotos gerais
 
 
 class MediaType(str, enum.Enum):

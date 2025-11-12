@@ -14,34 +14,31 @@ from app.services.s3 import BUCKET_RAW, s3, presign_get
 
 router = APIRouter()
 
+
 @router.get("/{event_slug}", response_model=List[PhotoResponse])
 async def get_photos_for_event(
         event_slug: str,
+        uploader_id: Optional[PyUUID] = Query(None),
         db: AsyncSession = Depends(get_conn)
 ):
-    # 1. Busca os dados do banco (onde s3_url é None)
+    # Base da query
     query = select(photos_table).where(photos_table.c.event_slug == event_slug)
+
+    # Se for fotógrafo, filtra pelo uploader_id
+    if uploader_id:
+        query = query.where(photos_table.c.uploader_id == uploader_id)
+
     result = await db.execute(query)
     photos_from_db = result.all()
 
-    #
-    # ▼▼▼ ESTA É A LÓGICA DE CORREÇÃO ▼▼▼
-    #
     response_data = []
     for photo_row in photos_from_db:
-        # Converte a "Row" do SQLAlchemy para um dict
         photo_dict = dict(photo_row._mapping)
-
-        # 2. Gera uma URL FRESCA "ao vivo" usando a s3_key
-        # O Pydantic agora vai receber uma URL válida em vez de 'None'
         photo_dict["s3_url"] = presign_get(BUCKET_RAW, photo_dict["s3_key"])
-
         response_data.append(photo_dict)
-    #
-    # ▲▲▲ FIM DA LÓGICA DE CORREÇÃO ▲▲▲
-    #
 
-    # 3. Retorna a lista com as URLs frescas para o frontend
+    return response_data
+
     return response_data
 @router.delete("/{photo_id}")
 async def delete_photo(

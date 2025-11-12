@@ -6,7 +6,6 @@ from datetime import datetime
 import uuid
 from .base import metadata
 
-# --- Definição da tabela ---
 comments_table = Table(
     "comments",
     metadata,
@@ -16,6 +15,7 @@ comments_table = Table(
     Column("comment", Text, nullable=False),
     Column("created_at", DateTime, default=datetime.utcnow),
 )
+
 
 class CommentIn(BaseModel):
     user_id: uuid.UUID
@@ -29,6 +29,8 @@ class CommentResponse(BaseModel):
     event_slug: str
     comment: str
     created_at: datetime
+    user_full_name: Optional[str] = None
+    user_instagram: Optional[str] = None
 
     class Config:
         from_attributes = True
