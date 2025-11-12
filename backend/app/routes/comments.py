@@ -6,7 +6,7 @@ from app.services.db import get_conn
 from app.schemas.comments import comments_table, CommentIn, CommentResponse
 from app.schemas.user import users_table
 
-router = APIRouter(prefix="", tags=["Comments"])
+router = APIRouter()
 
 
 # --- Criar um novo comentário ---
