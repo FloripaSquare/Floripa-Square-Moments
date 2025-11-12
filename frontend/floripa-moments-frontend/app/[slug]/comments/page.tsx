@@ -12,30 +12,24 @@ export default function CommentsPage() {
   const [comment, setComment] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
-  const [mounted, setMounted] = useState(false);
+  const [loading, setLoading] = useState(true); // indica se ainda estamos carregando user info
 
-  // Marca que o componente já montou
+  // Carrega user_id e token do localStorage, **somente no client**
   useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Só acessa localStorage depois que estiver montado
-  useEffect(() => {
-    if (!mounted) return;
-
     const storedUserId = localStorage.getItem("user_id");
     const storedToken =
       localStorage.getItem("user_token") ||
       localStorage.getItem("access_token");
 
     if (!storedUserId || !storedToken) {
-      router.push(`/${slug}`);
+      router.replace(`/${slug}`); // redirect seguro sem empurrar histórico
       return;
     }
 
     setUserId(storedUserId);
     setToken(storedToken);
-  }, [mounted, router, slug]);
+    setLoading(false);
+  }, [router, slug]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,25 +45,40 @@ export default function CommentsPage() {
         body: JSON.stringify({ event_slug: slug, user_id: userId, comment }),
       });
 
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || "Erro desconhecido");
+      }
+
       setComment("");
       alert("✅ Comentário enviado com sucesso!");
     } catch (err) {
       console.error("Erro no envio do comentário:", err);
+      alert("❌ Falha ao enviar comentário.");
     }
   };
 
-  if (!mounted) return null; // evita renderização prematura no SSR
+  if (loading) return null; // não renderiza nada até carregar localStorage
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center">
-      <form onSubmit={handleSubmit}>
+    <main className="min-h-screen flex flex-col items-center justify-center p-4">
+      <form
+        onSubmit={handleSubmit}
+        className="w-full max-w-md flex flex-col gap-4"
+      >
         <textarea
           value={comment}
           onChange={(e) => setComment(e.target.value)}
-          placeholder="Escreva algo..."
+          placeholder="Escreva algo sobre o evento..."
+          className="w-full p-3 border rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+          rows={5}
         />
-        <button type="submit">Enviar</button>
+        <button
+          type="submit"
+          className="py-3 px-4 rounded-md bg-blue-600 text-white font-semibold hover:bg-blue-700 transition"
+        >
+          Enviar Comentário
+        </button>
       </form>
     </main>
   );
