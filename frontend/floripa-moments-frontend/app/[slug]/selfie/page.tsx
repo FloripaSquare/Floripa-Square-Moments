@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
+import FeedbackPopup from "../comments/page";
 
 type Theme = {
   backgroundImage?: string;
@@ -11,11 +12,6 @@ type Theme = {
   secondaryButton: string;
   ghostButton: string;
 };
-
-const userId =
-  typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
-const token =
-  typeof window !== "undefined" ? localStorage.getItem("user_token") : null;
 
 const themes: Record<string, Theme> = {
   "floripa-square": {
@@ -198,15 +194,11 @@ export default function SelfiePage() {
           >
             Vídeos
           </button>
-          <button
-            type="button"
-            className={`${baseButtonClasses} ${theme.secondaryButton}`}
-            onClick={() => {
-              router.push(`/${slug}/comments`);
-            }}
-          >
-            Deixe seu Feedback
-          </button>
+        <FeedbackPopup 
+          slug={slug} 
+          buttonClass={`${baseButtonClasses} ${theme.secondaryButton}`} // botão externo
+          modalButtonClass={`${baseButtonClasses} ${theme.primaryButton}`} // botão dentro do modal
+        />
         </div>
       </div>
     </main>

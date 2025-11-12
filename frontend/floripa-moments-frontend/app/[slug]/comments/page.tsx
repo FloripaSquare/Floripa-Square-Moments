@@ -1,35 +1,37 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
 import { API_URL } from "@/lib/api";
 
-export default function CommentsPage() {
-  const router = useRouter();
-  const params = useParams<{ slug: string }>();
-  const slug = params?.slug || "default";
+interface Props {
+  slug: string;
+  buttonClass: string; // estilo do botão de abrir o modal
+  modalButtonClass: string; // estilo do botão dentro do modal
+}
 
+export default function FeedbackPopup({
+  slug,
+  buttonClass,
+  modalButtonClass,
+}: Props) {
+  const [isOpen, setIsOpen] = useState(false);
   const [comment, setComment] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true); // indica se ainda estamos carregando user info
+  const [loading, setLoading] = useState(true);
 
-  // Carrega user_id e token do localStorage, **somente no client**
   useEffect(() => {
     const storedUserId = localStorage.getItem("user_id");
     const storedToken =
       localStorage.getItem("user_token") ||
       localStorage.getItem("access_token");
 
-    if (!storedUserId || !storedToken) {
-      router.replace(`/${slug}`); // redirect seguro sem empurrar histórico
-      return;
+    if (storedUserId && storedToken) {
+      setUserId(storedUserId);
+      setToken(storedToken);
     }
-
-    setUserId(storedUserId);
-    setToken(storedToken);
     setLoading(false);
-  }, [router, slug]);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,41 +47,61 @@ export default function CommentsPage() {
         body: JSON.stringify({ event_slug: slug, user_id: userId, comment }),
       });
 
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || "Erro desconhecido");
-      }
-
+      if (!res.ok) throw new Error(await res.text());
       setComment("");
       alert("✅ Comentário enviado com sucesso!");
+      setIsOpen(false);
     } catch (err) {
       console.error("Erro no envio do comentário:", err);
       alert("❌ Falha ao enviar comentário.");
     }
   };
 
-  if (loading) return null; // não renderiza nada até carregar localStorage
+  if (loading) return null;
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center p-4">
-      <form
-        onSubmit={handleSubmit}
-        className="w-full max-w-md flex flex-col gap-4"
+    <>
+      {/* Botão para abrir o modal */}
+      <button
+        type="button"
+        className={buttonClass}
+        onClick={() => setIsOpen(true)}
       >
-        <textarea
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
-          placeholder="Escreva algo sobre o evento..."
-          className="w-full p-3 border rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-          rows={5}
-        />
-        <button
-          type="submit"
-          className="py-3 px-4 rounded-md bg-blue-600 text-white font-semibold hover:bg-blue-700 transition"
-        >
-          Enviar Comentário
-        </button>
-      </form>
-    </main>
+        Deixe seu Feedback
+      </button>
+
+      {/* Modal */}
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md relative">
+            <button
+              className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 text-lg"
+              onClick={() => setIsOpen(false)}
+            >
+              ✕
+            </button>
+            <h2 className="text-xl font-bold mb-4 text-gray-800">
+              Deixe seu comentário
+            </h2>
+            <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+              <textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder="Escreva algo sobre o evento..."
+                className="w-full p-3 border rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                rows={5}
+              />
+              {/* Botão dentro do modal agora usa estilo primário */}
+              <button
+                type="submit"
+                className={`${modalButtonClass} w-full text-center`}
+              >
+                Enviar Comentário
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
