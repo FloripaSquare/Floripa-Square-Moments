@@ -88,7 +88,7 @@ export default function UserLoginPage() {
 
       const data = await res.json();
       localStorage.setItem("user_token", data.access_token);
-
+      localStorage.setItem("user_id", data.user.id);
       setAlert({ type: "success", message: "Login realizado com sucesso!" });
 
       setTimeout(() => router.push(`/${slug}/selfie`), 800);
