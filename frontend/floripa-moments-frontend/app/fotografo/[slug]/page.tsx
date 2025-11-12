@@ -41,7 +41,6 @@ export default function PhotographerLogin() {
       // salva o token
       localStorage.setItem("photographer_token", data.access_token);
 
-      // garante pegar o event_slug correto
       const redirectSlug = data.user?.event_slug || data.event_slug;
       if (!redirectSlug) {
         setAlert({ type: "error", message: "Evento do usuário não definido" });
