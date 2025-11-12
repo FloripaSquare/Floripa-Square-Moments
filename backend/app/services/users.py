@@ -100,10 +100,7 @@ async def create_admin_user(conn: AsyncSession, data: AdminCreate):
     )
     result = await conn.execute(stmt)
     row = result.mappings().first()
-    
-    if row:
-        await track(conn, action="register_admin", user_id=str(row["id"]))
-        await conn.commit()
+
 
     return row
 

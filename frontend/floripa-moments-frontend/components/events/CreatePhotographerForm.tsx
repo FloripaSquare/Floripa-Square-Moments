@@ -166,7 +166,7 @@ export default function CreatePhotographerForm({ events }: Props) {
           </p>
           <input
             type="text"
-            value={"moments.floripasquare.com.br/fotografo/" + form.event_slug}
+            value={"moments-floripasquare.com.br/fotografo/" + form.event_slug}
             readOnly
             className="mt-1 w-full px-3 py-2 border border-gray-400 rounded bg-gray-50 text-gray-900"
           />

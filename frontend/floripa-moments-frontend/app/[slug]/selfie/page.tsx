@@ -12,6 +12,11 @@ type Theme = {
   ghostButton: string;
 };
 
+const userId =
+  typeof window !== "undefined" ? localStorage.getItem("user_id") : null;
+const token =
+  typeof window !== "undefined" ? localStorage.getItem("user_token") : null;
+
 const themes: Record<string, Theme> = {
   "floripa-square": {
     backgroundImage: "url('/base-moments.jpg')",
@@ -192,6 +197,22 @@ export default function SelfiePage() {
             onClick={() => router.push(`/${slug}/videos`)}
           >
             Vídeos
+          </button>
+          <button
+            type="button"
+            className={`${baseButtonClasses} ${theme.secondaryButton}`}
+            onClick={() => {
+              const token = localStorage.getItem("access_token");
+              const userId = localStorage.getItem("user_id");
+
+              if (!token || !userId) {
+                router.push(`/${slug}/login`);
+              } else {
+                router.push(`/${slug}/comments`);
+              }
+            }}
+          >
+            Deixe seu Feedback
           </button>
         </div>
       </div>

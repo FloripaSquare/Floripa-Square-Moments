@@ -32,11 +32,3 @@
     column-count: 4;
   }
 }
-@media (min-width: 1280px) {
-  .xl\:masonry-xl {
-    column-count: 5;
-  }
-}
-.masonry > * {
-  break-inside: avoid;
-}

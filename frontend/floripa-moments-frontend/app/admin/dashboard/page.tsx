@@ -32,6 +32,8 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { subDays, format, parseISO } from "date-fns";
+import PhotoManager from "@/components/PhotoManager";
+import EventCommentsList from "@/components/events/EventCommentList";
 
 // --- Tipos de Dados ---
 
@@ -109,6 +111,8 @@ export default function AdminDashboardPage() {
   >([]);
   const [activityMetrics, setActivityMetrics] = useState<RawMetric[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedEventSlug, setSelectedEventSlug] = useState<string>("");
+
   const [timeRange, setTimeRange] = useState<"1h" | "24h" | "3D" | "7D">("24h");
 
   const handleLogout = useCallback(() => {
@@ -303,8 +307,6 @@ export default function AdminDashboardPage() {
             </button>
           </div>
         </header>
-
-        {/* KPIs */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
           <StatCard
             title="Total de Pesquisas"
@@ -322,7 +324,6 @@ export default function AdminDashboardPage() {
             icon={ArrowDownTrayIcon}
           />
         </div>
-
         {/* Dashboards por Evento */}
         <section className="mt-8 space-y-4">
           <h2 className="text-2xl font-semibold text-gray-700">
@@ -341,7 +342,7 @@ export default function AdminDashboardPage() {
             <p className="text-gray-500">Nenhum evento encontrado.</p>
           )}
         </section>
-
+        <PhotoManager userRole="ADMIN" />
         {/* Gráficos */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 mt-8">
           {/* Atividade na Plataforma */}
@@ -451,7 +452,6 @@ export default function AdminDashboardPage() {
             </ResponsiveContainer>
           </section>
         </div>
-
         {/* Métricas por Usuário */}
         <section className="bg-white p-6 rounded-xl shadow mt-8">
           <h2 className="text-2xl font-semibold mb-4 text-gray-700">
@@ -489,6 +489,42 @@ export default function AdminDashboardPage() {
               </tbody>
             </table>
           </div>
+        </section>
+        {/* Comentários por Evento */}
+        <section className="bg-white p-6 rounded-xl shadow mt-8">
+          <h2 className="text-2xl font-semibold mb-4 text-gray-700">
+            Comentários por Evento
+          </h2>
+
+          <div className="mb-4">
+            <label
+              htmlFor="eventSelect"
+              className="block text-sm font-medium text-gray-600 mb-2"
+            >
+              Selecione um evento:
+            </label>
+            <select
+              id="eventSelect"
+              value={selectedEventSlug}
+              onChange={(e) => setSelectedEventSlug(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">-- Escolha um evento --</option>
+              {events.map((event) => (
+                <option key={event.slug} value={event.slug}>
+                  {event.title} ({event.slug})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {selectedEventSlug ? (
+            <EventCommentsList eventSlug={selectedEventSlug} />
+          ) : (
+            <p className="text-gray-500 text-sm mt-4">
+              Selecione um evento para visualizar os comentários.
+            </p>
+          )}
         </section>
 
         {/* Forms */}

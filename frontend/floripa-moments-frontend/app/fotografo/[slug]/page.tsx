@@ -11,7 +11,9 @@ import Footer from "@/components/Footer";
 export default function PhotographerLogin() {
   const router = useRouter();
   const params = useParams();
-  const slug = params?.slug ?? "";
+  const slug = Array.isArray(params?.slug)
+    ? params.slug[0]
+    : params?.slug ?? "";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -33,23 +35,28 @@ export default function PhotographerLogin() {
         body: new URLSearchParams({ email, password }),
       });
 
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.detail || "Erro ao fazer login");
-      }
-
       const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Erro ao fazer login");
+
+      // salva o token
       localStorage.setItem("photographer_token", data.access_token);
+
+      // garante pegar o event_slug correto
+      const redirectSlug = data.user?.event_slug || data.event_slug;
+      if (!redirectSlug) {
+        setAlert({ type: "error", message: "Evento do usuário não definido" });
+        return;
+      }
 
       setAlert({
         type: "success",
-        message: "Login realizado com sucesso! Redirecionando...",
+        message: "Login realizado! Redirecionando...",
       });
-
-      setTimeout(() => router.push(`/fotografo/${slug}/painel`), 1000);
+      setTimeout(() => {
+        router.push(`/fotografo/${redirectSlug}/painel`);
+      }, 1000);
     } catch (err: unknown) {
-      let message = "Erro desconhecido";
-      if (err instanceof Error) message = err.message;
+      const message = err instanceof Error ? err.message : "Erro desconhecido";
       setAlert({ type: "error", message });
     } finally {
       setLoading(false);
@@ -91,7 +98,7 @@ export default function PhotographerLogin() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="mt-1 block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm bg-gray-50 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+                className="mt-1 block w-full px-3 py-2 border border-gray-600 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-600"
                 placeholder="seuemail@empresa.com"
               />
             </div>
@@ -105,7 +112,7 @@ export default function PhotographerLogin() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="mt-1 block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm bg-gray-50 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+                className="mt-1 block w-full px-3 py-2 border border-gray-600 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-600"
                 placeholder="********"
               />
             </div>
@@ -113,7 +120,7 @@ export default function PhotographerLogin() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center items-center py-2 px-4 bg-blue-700 text-white font-semibold rounded-md shadow-sm hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex justify-center items-center py-2 px-4 bg-blue-700 text-white font-semibold rounded-md shadow-sm hover:bg-blue-800 disabled:opacity-50"
             >
               {loading ? "Entrando..." : "Entrar"}
             </button>

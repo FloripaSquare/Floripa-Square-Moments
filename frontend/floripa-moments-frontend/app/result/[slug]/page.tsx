@@ -1,26 +1,20 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState, useRef, memo } from "react";
+import React, { useEffect, useState, useRef, memo } from "react";
 import { ArrowDownTrayIcon, ArrowPathIcon } from "@heroicons/react/24/solid";
-import Footer from "@/components/Footer";
 
 // --- Tipos ---
 type SearchItem = { key: string; url: string };
 type SearchOut = { count: number; items: SearchItem[] };
 
-// --- Função Utilitária para a Métrica (sem alterações) ---
+// --- Função Utilitária para a Métrica ---
 async function trackDownloadIntent(slug: string, fileName: string) {
   console.log("Tracking download intent for:", fileName);
   const token = localStorage.getItem("user_token");
-  if (!token) {
-    console.warn(
-      "Métrica de download não registrada: token de usuário não encontrado."
-    );
-    return;
-  }
+  if (!token) return;
+
   try {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL;
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
     await fetch(`${API_URL}/admin/metrics/download`, {
       method: "POST",
       headers: {
@@ -29,13 +23,36 @@ async function trackDownloadIntent(slug: string, fileName: string) {
       },
       body: JSON.stringify({ event_slug: slug, file_name: fileName }),
     });
-    console.log(`Métrica de download registrada para: ${fileName}`);
+    console.log(`Métrica registrada para: ${fileName}`);
   } catch (error) {
-    console.error("Falha ao registrar métrica de download:", error);
+    console.error("Falha ao registrar métrica:", error);
   }
 }
 
-// --- Componente do Card da Imagem (VERSÃO DEFINITIVA COM MENU NATIVO) ---
+// --- DOWNLOAD FORÇADO (apenas desktop) ---
+async function forceDownload(url: string, filenameKey: string) {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`Falha: ${response.statusText}`);
+
+    const blob = await response.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const cleanFilename = filenameKey.split("/").pop() || "foto.jpg";
+
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = cleanFilename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(blobUrl);
+  } catch (err) {
+    console.error("Erro ao fazer download:", err);
+    alert("Não foi possível baixar a imagem.");
+  }
+}
+
+// --- CARD DE IMAGEM ---
 const ImageCard = memo(function ImageCard({
   item,
   slug,
@@ -43,169 +60,141 @@ const ImageCard = memo(function ImageCard({
   item: SearchItem;
   slug: string;
 }) {
-  const [showSaveHint, setShowSaveHint] = useState(false);
-  const pressTimer = useRef<NodeJS.Timeout | null>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const isMobile =
+    /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+    ("ontouchstart" in window && navigator.maxTouchPoints > 1);
 
-  // Inicia quando o usuário TOCA ou CLICA
-  const handleInteractionStart = () => {
-    pressTimer.current = setTimeout(() => {
-      // 🥇 A MÉTRICA É DISPARADA AQUI, ao confirmar a intenção
+  // --- MOBILE: registra métrica ao toque longo ---
+  const touchTimeout = useRef<number | null>(null);
+
+  const handleTouchStart = () => {
+    touchTimeout.current = window.setTimeout(() => {
       trackDownloadIntent(slug, item.key);
-      setShowSaveHint(true);
-    }, 500); // Meio segundo para o "long press"
+      console.log("Métrica registrada (mobile touch)");
+      // Não fazer mais nada — deixa o menu nativo do sistema aparecer
+    }, 600); // 600ms = tempo padrão de long press
   };
 
-  // Termina quando o usuário SOLTA o dedo/mouse
-  const handleInteractionEnd = () => {
-    if (pressTimer.current) {
-      clearTimeout(pressTimer.current);
+  const handleTouchEnd = () => {
+    if (touchTimeout.current) {
+      clearTimeout(touchTimeout.current);
+      touchTimeout.current = null;
     }
-    setShowSaveHint(false);
   };
 
-  // Fallback para clique direito no desktop
-  const handleContextMenu = (e: React.MouseEvent) => {
-    // Impede o menu nativo de aparecer se a nossa UI já estiver visível (evita conflito)
-    if (showSaveHint) e.preventDefault();
+  // --- DESKTOP: clique direito força download ---
+  const handleContextMenu = async (e: React.MouseEvent) => {
+    if (isMobile) return; // evita interferir no mobile
+    e.preventDefault();
+    if (isDownloading) return;
+
     trackDownloadIntent(slug, item.key);
+    setIsDownloading(true);
+    try {
+      await forceDownload(item.url, item.key);
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   return (
-    <div
-      className="group relative w-full overflow-hidden rounded-lg bg-gray-200 shadow-lg"
-      // Eventos para mobile e desktop no container principal
-      onTouchStart={handleInteractionStart}
-      onTouchEnd={handleInteractionEnd}
-      onTouchCancel={handleInteractionEnd} // Garante limpeza se o toque for interrompido
-      onMouseDown={handleInteractionStart}
-      onMouseUp={handleInteractionEnd}
-      onMouseLeave={handleInteractionEnd}
-      onContextMenu={handleContextMenu}
-    >
+    <div className="group relative w-full overflow-hidden rounded-lg bg-gray-200 shadow-lg">
       <img
         src={item.url}
-        alt={`Foto da busca`}
-        className="w-full h-auto object-cover"
+        alt="Foto"
+        className="w-full h-auto object-cover select-none"
         loading="lazy"
+        onContextMenu={handleContextMenu}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        draggable={false}
+        style={{ cursor: isMobile ? "auto" : "pointer" }}
       />
 
-      {/* Checkbox removido */}
-
-      {/* ✅ NOSSA NOVA UI DE AVISO - Ela é "transparente" a eventos de mouse/toque */}
-      {showSaveHint && (
-        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-black/50 backdrop-blur-sm text-white font-semibold pointer-events-none">
-          <ArrowDownTrayIcon className="h-8 w-8" />
-          <span>Solte para ver opções</span>
+      {isDownloading && (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-black/70 backdrop-blur-sm text-white font-semibold pointer-events-none">
+          <ArrowPathIcon className="h-8 w-8 animate-spin" />
+          <span>A guardar...</span>
         </div>
       )}
     </div>
   );
 });
 
-// --- Componente Principal da Página ---
+// --- PÁGINA PRINCIPAL ---
 export default function ResultPage() {
-  const params = useParams<{ slug?: string }>();
-  const router = useRouter();
+  const [slug, setSlug] = useState<string>("");
   const [searchResult, setSearchResult] = useState<SearchOut | null>(null);
   const [displayItems, setDisplayItems] = useState<SearchItem[]>([]);
-  // Estado 'selectedKeys' removido
   const loaderRef = useRef<HTMLDivElement | null>(null);
   const perPage = 24;
-  const INACTIVITY_TIME = 5 * 60 * 1000;
-  const timeoutRef = useRef<number | undefined>(undefined);
-  const slug = params?.["slug"] as string;
 
+  // --- Obter slug ---
   useEffect(() => {
-    const resetTimer = () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      timeoutRef.current = window.setTimeout(() => {
-        router.push(`/login/${slug}`);
-      }, INACTIVITY_TIME);
-    };
-    const handleVisibilityChange = () => {
-      if (document.hidden) router.push(`/login/${slug}`);
-      else resetTimer();
-    };
-    const events = [
-      "mousemove",
-      "mousedown",
-      "keypress",
-      "touchstart",
-      "scroll",
-    ];
-    events.forEach((event) => window.addEventListener(event, resetTimer));
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    resetTimer();
-    return () => {
-      events.forEach((event) => window.removeEventListener(event, resetTimer));
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    };
-  }, [slug, router]);
+    const path = window.location.pathname;
+    const lastSegment = path.split("/").filter(Boolean).pop();
+    if (lastSegment && lastSegment !== "preview") {
+      setSlug(lastSegment);
+    } else {
+      setSlug(localStorage.getItem("current_event_slug") || "floripa-square");
+    }
+  }, []);
 
+  // --- Carregar resultados ---
   useEffect(() => {
     const stored = localStorage.getItem("search_result");
     if (stored) {
       const result = JSON.parse(stored) as SearchOut;
-      const uniqueItems = Array.from(
-        new Map(result.items.map((item) => [item.key, item])).values()
+      const unique = Array.from(
+        new Map(result.items.map((i) => [i.key, i])).values()
       );
-      setSearchResult({ count: uniqueItems.length, items: uniqueItems });
-      setDisplayItems(uniqueItems.slice(0, perPage));
+      setSearchResult({ count: unique.length, items: unique });
+      setDisplayItems(unique.slice(0, perPage));
     }
   }, []);
 
+  // --- Scroll infinito ---
   useEffect(() => {
     if (!searchResult) return;
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
-          setDisplayItems((prevItems) => {
-            if (prevItems.length >= searchResult.items.length) return prevItems;
-            return searchResult.items.slice(0, prevItems.length + perPage);
-          });
+          setDisplayItems((prev) =>
+            searchResult.items.slice(0, prev.length + perPage)
+          );
         }
       },
       { rootMargin: "200px" }
     );
-    const currentLoader = loaderRef.current;
-    if (currentLoader) observer.observe(currentLoader);
-    return () => {
-      if (currentLoader) observer.unobserve(currentLoader);
-    };
+    if (loaderRef.current) observer.observe(loaderRef.current);
+    return () => observer.disconnect();
   }, [searchResult]);
 
-  // Função 'toggleSelect' removida
-  // Função 'downloadSelected' removida
-
-  if (!slug) return <StateMessage message="Nenhuma busca informada." />;
+  if (!slug)
+    return <StateMessage message="Nenhuma busca informada." showSpinner />;
   if (!searchResult)
-    return <StateMessage showSpinner message="Carregando resultados..." />;
+    return <StateMessage message="Carregando resultados..." showSpinner />;
   if (searchResult.items.length === 0)
-    return <StateMessage message="Nenhuma foto encontrada para sua busca." />;
+    return <StateMessage message="Nenhuma foto encontrada." />;
 
   return (
     <main className="min-h-screen bg-gray-50 p-4 sm:p-6 md:p-8">
       <div className="mx-auto max-w-7xl">
         <header className="mb-6 flex flex-col items-center justify-between gap-4 sm:flex-row">
           <h1 className="text-center text-xl font-bold text-gray-800 sm:text-left sm:text-2xl md:text-3xl">
-            {searchResult.count} foto{searchResult.count !== 1 ? "s" : ""}{" "}
-            encontrada{searchResult.count !== 1 ? "s" : ""}
+            {searchResult.count} foto
+            {searchResult.count !== 1 ? "s encontradas" : " encontrada"}
           </h1>
           <p className="text-center text-sm text-gray-600 sm:text-base">
-            Pressione e segure a foto para salvar
+            Pressione e segure para salvar na galeria
           </p>
-          {/* Botão de download removido */}
         </header>
 
         <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-3 space-y-3">
           {displayItems.map((item) => (
             <div key={item.key} className="break-inside-avoid">
-              <ImageCard
-                item={item}
-                slug={slug}
-                // Props 'selected' e 'toggleSelect' removidas
-              />
+              <ImageCard item={item} slug={slug} />
             </div>
           ))}
         </div>
@@ -221,7 +210,7 @@ export default function ResultPage() {
   );
 }
 
-// --- Componente auxiliar para mensagens (sem alterações) ---
+// --- Estado visual ---
 function StateMessage({
   message,
   showSpinner = false,
@@ -240,3 +229,12 @@ function StateMessage({
     </main>
   );
 }
+
+// --- Footer ---
+const Footer = () => (
+  <footer className="py-6 text-center text-sm text-gray-500">
+    <p>
+      &copy; {new Date().getFullYear()} PhotoFind. Todos os direitos reservados.
+    </p>
+  </footer>
+);

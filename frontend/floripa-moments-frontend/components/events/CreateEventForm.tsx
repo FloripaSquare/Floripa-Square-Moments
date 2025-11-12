@@ -57,7 +57,7 @@ export default function CreateEventForm({ onCreated }: CreateEventFormProps) {
       // ✅ CORREÇÃO 3: 'privacy_url' é construída dinamicamente aqui, no momento do envio.
       // Isso garante que ela sempre corresponda ao 'slug' e seja uma URL válida ou null.
       const constructedPrivacyUrl = newEvent.slug
-        ? `https://moments.floripasquare.com.br/${newEvent.slug}/privacy`
+        ? `https://-floripasquare.com.br/${newEvent.slug}/privacy`
         : null;
 
       // ✅ CORREÇÃO 4: A lógica para 'participants_count' foi ajustada.
@@ -157,12 +157,10 @@ export default function CreateEventForm({ onCreated }: CreateEventFormProps) {
       </div>
 
       {/* Visualização da URL para o usuário */}
-      <p className="mt-1 text-xs text-gray-500 -mb-3">
-        URL de acesso do cliente:
-      </p>
+
       <input
         type="text"
-        value={"moments.floripasquare.com.br/" + newEvent.slug}
+        value={"moments-floripasquare.com.br/" + newEvent.slug}
         readOnly
         className="w-full px-3 py-2 border border-gray-300 rounded bg-gray-50 text-gray-600 text-sm"
       />

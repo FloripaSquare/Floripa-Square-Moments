@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { API_URL } from "@/lib/api";
 import { PhotoIcon } from "@heroicons/react/24/solid";
 
@@ -10,9 +10,10 @@ interface Event {
 }
 
 interface UploadPhotosFormProps {
-  events: Event[]; // Lista de eventos disponíveis (para admins)
-  userRole: "ADMIN" | "PHOTOGRAPHER"; // Role do usuário
-  eventSlug?: string; // Slug do evento do fotógrafo (opcional para admin)
+  events: Event[]; // Lista de eventos (para ADMIN)
+  userRole: "ADMIN" | "PHOTOGRAPHER";
+  eventSlug?: string; // Slug do evento (para fotógrafo)
+  uploaderId?: string; // ID do fotógrafo (obrigatório para fotógrafo)
   onUploaded?: () => void;
 }
 
@@ -20,16 +21,22 @@ export default function UploadPhotosForm({
   events,
   userRole,
   eventSlug,
+  uploaderId,
   onUploaded,
 }: UploadPhotosFormProps) {
   const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
-  const [selectedEvent, setSelectedEvent] = useState(
-    userRole === "PHOTOGRAPHER" ? eventSlug || "" : ""
-  );
+  const [selectedEvent, setSelectedEvent] = useState<string>("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // ✅ Ao montar, se for fotógrafo, define o evento fixo
+  useEffect(() => {
+    if (userRole === "PHOTOGRAPHER" && eventSlug) {
+      setSelectedEvent(eventSlug);
+    }
+  }, [userRole, eventSlug]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setMessage("");
@@ -44,6 +51,11 @@ export default function UploadPhotosForm({
       return;
     }
 
+    if (userRole === "PHOTOGRAPHER" && !uploaderId) {
+      setMessage("❌ ID do fotógrafo ausente.");
+      return;
+    }
+
     setLoading(true);
     setMessage("");
 
@@ -52,34 +64,53 @@ export default function UploadPhotosForm({
         userRole === "ADMIN"
           ? localStorage.getItem("admin_token")
           : localStorage.getItem("photographer_token");
-      if (!token) throw new Error("Token não encontrado");
+
+      if (!token) throw new Error("Token não encontrado ou expirado");
 
       const formData = new FormData();
       Array.from(selectedFiles).forEach((file) => {
-        formData.append("files", file); // chave esperada pelo backend
+        formData.append("files", file);
       });
 
-      // ✅ Rota correta para múltiplos arquivos com Rekognition
-      const res = await fetch(`${API_URL}/uploads/${selectedEvent}/photos`, {
+      // ✅ Construir URL conforme backend
+      const url = new URL(`${API_URL}/uploads/${selectedEvent}/photos`);
+      if (uploaderId) url.searchParams.append("uploader_id", uploaderId);
+
+      console.log("➡️ Enviando upload:", {
+        url: url.toString(),
+        uploaderId,
+        selectedEvent,
+        files: Array.from(selectedFiles).map((f) => f.name),
+        role: userRole,
+      });
+
+      const res = await fetch(url.toString(), {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
 
+      const resText = await res.text();
+      console.log("⬅️ Resposta do backend:", res.status, resText);
+
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.detail || "Erro ao enviar fotos");
+        let errorMessage = "Erro ao enviar fotos";
+        try {
+          const errorData = JSON.parse(resText);
+          errorMessage = errorData.detail || errorData.message || errorMessage;
+        } catch {
+          errorMessage = resText || errorMessage;
+        }
+        throw new Error(errorMessage);
       }
 
-      setMessage(`✅ foto(s) enviada(s) com sucesso!`);
-
-      // Limpar seleção
+      setMessage("✅ Foto(s) enviada(s) com sucesso!");
       setSelectedFiles(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
 
       onUploaded?.();
     } catch (err: unknown) {
-      console.error(err);
+      console.error("❌ Erro no upload:", err);
       if (err instanceof Error) setMessage(`❌ ${err.message}`);
       else setMessage(`❌ Erro desconhecido: ${String(err)}`);
     } finally {
@@ -89,6 +120,7 @@ export default function UploadPhotosForm({
 
   return (
     <form onSubmit={handleUpload} className="space-y-4">
+      {/* Se for ADMIN, pode escolher o evento */}
       {userRole === "ADMIN" && (
         <div>
           <label
@@ -117,6 +149,19 @@ export default function UploadPhotosForm({
         </div>
       )}
 
+      {/* Se for FOTÓGRAFO, mostra evento fixo */}
+      {userRole === "PHOTOGRAPHER" && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Evento associado
+          </label>
+          <p className="mt-1 text-sm text-gray-900 font-semibold">
+            {selectedEvent || "Nenhum evento associado"}
+          </p>
+        </div>
+      )}
+
+      {/* Upload */}
       <div>
         <label className="block text-sm font-medium text-gray-700">
           Fotos para Upload

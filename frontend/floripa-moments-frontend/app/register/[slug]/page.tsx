@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Footer from "@/components/Footer";
+import { Eye, EyeOff } from "lucide-react";
 
 // --- Interfaces e Tipos ---
 interface FormData {
@@ -30,12 +31,9 @@ interface ConsentItem {
 
 // --- Tema ---
 interface Theme {
-  name: string;
   accentColor: string;
   backgroundImage: string;
   textColor: string;
-  checkboxTextColor: string;
-  formBg: string;
   borderColor: string;
   primaryButton: string;
   secondaryButton: string;
@@ -46,12 +44,9 @@ interface Theme {
 
 const themes: Record<string, Theme> = {
   "floripa-square": {
-    name: "Floripa Square",
     accentColor: "#f37021",
     backgroundImage: "url('/base-moments.jpg')",
     textColor: "text-white",
-    checkboxTextColor: "white",
-    formBg: "",
     borderColor: "border-white/50",
     primaryButton: "bg-[#f37021] hover:bg-[#d35e1d] text-white",
     secondaryButton: "bg-white/10 text-white hover:bg-white/20",
@@ -60,18 +55,15 @@ const themes: Record<string, Theme> = {
     isDark: true,
   },
   default: {
-    name: "Floripa Square",
-    accentColor: "#f37021",
-    backgroundImage: "url('/base-moments.jpg')",
-    textColor: "text-white",
-    checkboxTextColor: "white",
-    formBg: "",
-    borderColor: "border-white/50",
-    primaryButton: "bg-[#f37021] hover:bg-[#d35e1d] text-white",
-    secondaryButton: "bg-white/10 text-white hover:bg-white/20",
-    linkColor: "text-white",
+    accentColor: "#1d4ed8",
+    backgroundImage: "url('/bg-form.png')",
+    textColor: "text-gray-900",
+    borderColor: "border-blue-100",
+    primaryButton: "bg-blue-700 hover:bg-blue-800 text-white",
+    secondaryButton: "bg-blue-100 text-blue-800 hover:bg-blue-200",
+    linkColor: "text-blue-700",
     linkHoverColor: "underline",
-    isDark: true,
+    isDark: false,
   },
 };
 
@@ -81,8 +73,7 @@ export default function RegisterPage() {
   const router = useRouter();
   const slugParam = params?.slug;
   const slug = Array.isArray(slugParam) ? slugParam[0] : slugParam;
-
-  const theme = themes[slug || "default"] || themes.default;
+  const theme = themes[slug || "default"];
 
   const [form, setForm] = useState<FormData>({
     name: "",
@@ -100,8 +91,12 @@ export default function RegisterPage() {
     responsible_consent: false,
   });
 
+  const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
 
+  // --- Consentimentos ---
   const consentItems: ConsentItem[] = [
     {
       key: "biometric_acceptance",
@@ -190,16 +185,89 @@ export default function RegisterPage() {
     ));
   };
 
+  // --- Máscara WhatsApp ---
+  const handleWhatsappChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let val = e.target.value.replace(/\D/g, "");
+    if (val.length > 11) val = val.slice(0, 11);
+
+    let maskedValue = "";
+    if (val.length > 0) maskedValue = "(" + val.substring(0, 2);
+    if (val.length > 2) maskedValue += ") " + val.substring(2, 7);
+    if (val.length > 7) maskedValue += "-" + val.substring(7, 11);
+
+    setForm({ ...form, whatsapp: maskedValue });
+  };
+
+  // --- Envio do formulário ---
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const requiredConsents: (keyof FormData)[] = consentItems
+      .filter((item) => item.required)
+      .map((item) => item.key);
+
+    for (const key of requiredConsents) {
+      if (!form[key]) {
+        const consentTitle =
+          consentItems.find((c) => c.key === key)?.title ||
+          "um termo obrigatório";
+        setMsg({
+          text: `O consentimento "${consentTitle}" é obrigatório.`,
+          ok: false,
+        });
+        return;
+      }
+    }
+
+    try {
+      setLoading(true);
+      setMsg(null);
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...form, event_slug: slug }),
+      });
+
+      const responseData = await res.json();
+
+      if (!res.ok) {
+        throw new Error(responseData.detail || "Erro ao cadastrar usuário");
+      }
+
+      if (responseData?.token) {
+        localStorage.setItem("user_token", responseData.token);
+        router.push(`/${slug}/selfie`);
+      } else {
+        setMsg({
+          text: "Cadastro realizado com sucesso! Faça o login.",
+          ok: true,
+        });
+        setTimeout(() => router.push(`/login/${slug}`), 2000);
+      }
+    } catch (err: unknown) {
+      setMsg({
+        text:
+          err instanceof Error ? err.message : "Erro inesperado ao cadastrar",
+        ok: false,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const inputClass = `w-full px-4 py-2.5 border rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-[${theme.accentColor}] border-gray-400`;
 
   return (
     <>
       <main
-        className="min-h-screen w-full flex flex-col items-center justify-center bg-cover bg-center bg-no-repeat "
+        className="min-h-screen w-full flex flex-col items-center justify-center bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: theme.backgroundImage }}
       >
-        <div
-          className={`w-full max-w-md mx-auto p-6 rounded-2xl shadow-xl space-y-3 overflow-y-auto max-h-[90vh] ${theme.formBg}`}
+        <form
+          onSubmit={handleSubmit}
+          className={`w-full max-w-md mx-auto p-6 rounded-2xl shadow-xl space-y-3 overflow-y-auto max-h-[90vh]
+          }`}
         >
           <h1
             className={`text-3xl font-extrabold text-center mb-4 ${theme.textColor}`}
@@ -227,7 +295,7 @@ export default function RegisterPage() {
             />
           </div>
 
-          {/* Email e Senha */}
+          {/* Email */}
           <input
             type="email"
             placeholder="Email *"
@@ -237,14 +305,24 @@ export default function RegisterPage() {
             required
           />
 
-          <input
-            type="password"
-            placeholder="Senha *"
-            value={form.password}
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
-            className={inputClass}
-            required
-          />
+          {/* Senha  */}
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="Senha *"
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              className={`${inputClass} pr-10`}
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((prev) => !prev)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+            >
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+          </div>
 
           {/* Instagram e WhatsApp */}
           <input
@@ -257,14 +335,14 @@ export default function RegisterPage() {
           />
 
           <input
-            type="text"
+            type="tel"
             placeholder="WhatsApp (opcional)"
             value={form.whatsapp}
-            onChange={(e) => setForm({ ...form, whatsapp: e.target.value })}
+            onChange={handleWhatsappChange}
             className={inputClass}
           />
 
-          {/* Termo de Consentimento */}
+          {/* Termos */}
           <div
             className={`p-3 rounded-lg border text-sm space-y-3 ${theme.borderColor}`}
           >
@@ -288,40 +366,39 @@ export default function RegisterPage() {
             <div className="flex justify-center gap-2 pt-1">
               {progressDots()}
             </div>
+          </div>
 
-            {/* Políticas e Termos personalizáveis */}
-            <div className="text-center text-sm space-y-1 pt-3">
-              <a
-                href={`/${slug}/privacy-politcs`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`${theme.linkHoverColor} ${theme.linkColor}`}
-              >
-                Políticas de Privacidade
-              </a>
-              <span
-                className={theme.isDark ? "text-white/70" : "text-gray-500"}
-              >
-                {" "}
-                |{" "}
-              </span>
-              <a
-                href={`/${slug}/terms`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`${theme.linkHoverColor} ${theme.linkColor}`}
-              >
-                Termos e Condições de Uso
-              </a>
-            </div>
+          {/* Links */}
+          <div className="text-center text-sm space-y-1 pt-3">
+            <a
+              href={`/${slug}/privacy`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`${theme.linkHoverColor} ${theme.linkColor}`}
+            >
+              Políticas de Privacidade
+            </a>
+            <span className={theme.isDark ? "text-white/70" : "text-gray-500"}>
+              {" "}
+              |{" "}
+            </span>
+            <a
+              href={`/${slug}/terms`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`${theme.linkHoverColor} ${theme.linkColor}`}
+            >
+              Termos e Condições de Uso
+            </a>
           </div>
 
           {/* Botões */}
           <button
             type="submit"
-            className={`w-full py-2.5 rounded-lg font-semibold shadow-md ${theme.primaryButton}`}
+            disabled={loading}
+            className={`w-full py-2.5 rounded-lg font-semibold shadow-md ${theme.primaryButton} disabled:opacity-60`}
           >
-            Finalizar Cadastro
+            {loading ? "Enviando..." : "Finalizar Cadastro"}
           </button>
 
           <button
@@ -331,7 +408,19 @@ export default function RegisterPage() {
           >
             Já tenho cadastro
           </button>
-        </div>
+
+          {msg && (
+            <p
+              className={`mt-2 text-center text-sm font-medium p-2 rounded ${
+                msg.ok
+                  ? "bg-green-100 text-green-700"
+                  : "bg-red-100 text-red-700"
+              }`}
+            >
+              {msg.text}
+            </p>
+          )}
+        </form>
       </main>
       <Footer />
     </>
