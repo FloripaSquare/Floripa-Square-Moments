@@ -22,14 +22,9 @@ const VideoCard = memo(function VideoCard({ item }: { item: VideoItem }) {
       : videoRef.current.pause();
   };
 
-  // Download nativo
-  const handleDownload = () => {
-    const a = document.createElement("a");
-    a.href = item.url;
-    a.download = item.key;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+  // Abrir vídeo em nova aba para visualização + download nativo do navegador
+  const handleOpenVideo = () => {
+    window.open(item.url, "_blank");
   };
 
   return (
@@ -43,9 +38,10 @@ const VideoCard = memo(function VideoCard({ item }: { item: VideoItem }) {
         preload="metadata"
         onClick={handlePlayPause}
       />
+      {/* Botão para abrir vídeo em nova aba */}
       <button
-        onClick={handleDownload}
-        title="Baixar vídeo"
+        onClick={handleOpenVideo}
+        title="Abrir vídeo em tela cheia / baixar"
         className="absolute bottom-2 left-2 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/80 text-gray-800 opacity-0 shadow-md transition-all duration-300 group-hover:opacity-100 hover:scale-110 hover:bg-white"
       >
         <ArrowDownTrayIcon className="h-6 w-6" />
