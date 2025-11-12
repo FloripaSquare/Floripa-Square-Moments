@@ -202,12 +202,13 @@ export default function SelfiePage() {
             type="button"
             className={`${baseButtonClasses} ${theme.secondaryButton}`}
             onClick={() => {
-              const token = localStorage.getItem("user_token");
               const userId = localStorage.getItem("user_id");
 
-              if (!token || !userId) {
+              if (!userId) {
+                // Usuário não logado → redireciona para a página de login
                 router.push(`/${slug}`);
               } else {
+                // Usuário logado → vai para a lista de comentários
                 router.push(`/${slug}/comments`);
               }
             }}

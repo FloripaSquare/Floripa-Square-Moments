@@ -13,27 +13,23 @@ type VideoOut = { count: number; items: VideoItem[] };
 const VideoCard = memo(function VideoCard({ item }: { item: VideoItem }) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
+  // Play / Pause com som
   const handlePlayPause = () => {
     if (!videoRef.current) return;
-    if (videoRef.current.paused) videoRef.current.play();
-    else videoRef.current.pause();
+    videoRef.current.muted = false;
+    videoRef.current.paused
+      ? videoRef.current.play()
+      : videoRef.current.pause();
   };
 
-  const handleDownload = async () => {
-    try {
-      const res = await fetch(item.url);
-      const blob = await res.blob();
-      const objectUrl = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = objectUrl;
-      a.download = item.key;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(objectUrl);
-    } catch (err) {
-      console.error("Erro ao baixar vídeo:", err);
-    }
+  // Download nativo
+  const handleDownload = () => {
+    const a = document.createElement("a");
+    a.href = item.url;
+    a.download = item.key;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
   };
 
   return (
@@ -44,9 +40,9 @@ const VideoCard = memo(function VideoCard({ item }: { item: VideoItem }) {
         className="w-full object-cover transition-all duration-300 group-hover:scale-105 cursor-pointer"
         playsInline
         loop
+        preload="metadata"
         onClick={handlePlayPause}
       />
-      {/* Botão de download */}
       <button
         onClick={handleDownload}
         title="Baixar vídeo"
