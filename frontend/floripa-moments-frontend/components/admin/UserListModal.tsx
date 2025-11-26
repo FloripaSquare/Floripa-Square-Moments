@@ -1,27 +1,28 @@
+// Versão ajustada da listagem de usuários COM last_name exibido corretamente
+// Você pode substituir diretamente seu componente UserListModal por este
+
 "use client";
 
 import { XMarkIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 
-// Interface unificada que combina detalhes do usuário e suas métricas
 interface UserActivity {
   user_name: string;
+  last_name?: string | null;
   email: string;
   instagram?: string | null;
   whatsapp?: string | null;
-  pesquisas: number; // Acessos
+  pesquisas: number;
   downloads: number;
 }
 
-// ✨ Adicionada a propriedade `isLoading` para feedback de carregamento
 interface Props {
   isOpen: boolean;
-  isLoading: boolean; // Novo
+  isLoading: boolean;
   onClose: () => void;
   metrics: UserActivity[];
   eventSlug: string;
 }
 
-// Componente de Spinner para o estado de carregamento
 const LoadingSpinner = () => (
   <div className="flex justify-center items-center h-64">
     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
@@ -30,17 +31,14 @@ const LoadingSpinner = () => (
 
 export default function UserListModal({
   isOpen,
-  isLoading, // Novo
+  isLoading,
   onClose,
   metrics,
   eventSlug,
 }: Props) {
-  // A lógica de exportação permanece a mesma.
   const handleExportToCSV = () => {
-    if (metrics.length === 0) {
-      alert("Não há dados para exportar.");
-      return;
-    }
+    if (metrics.length === 0) return alert("Não há dados para exportar.");
+
     const headers = [
       "Nome Completo",
       "Email",
@@ -49,9 +47,10 @@ export default function UserListModal({
       "Acessos",
       "Downloads",
     ];
+
     const rows = metrics.map((user) =>
       [
-        `"${user.user_name}"`,
+        `"${user.user_name} ${user.last_name ?? ""}"`,
         user.email,
         user.instagram || "",
         user.whatsapp || "",
@@ -59,16 +58,19 @@ export default function UserListModal({
         user.downloads,
       ].join(",")
     );
+
     const csvContent = [headers.join(","), ...rows].join("\n");
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
+
     const filename = `cadastros-e-atividade-${eventSlug}-${new Date()
       .toISOString()
       .slice(0, 10)}.csv`;
     const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", filename);
-    link.style.visibility = "hidden";
+
+    link.href = url;
+    link.download = filename;
+    link.style.display = "none";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -87,12 +89,10 @@ export default function UserListModal({
           <div className="flex items-center gap-4">
             <button
               onClick={handleExportToCSV}
-              disabled={metrics.length === 0 || isLoading} // Desabilitado também durante o carregamento
-              className="flex items-center gap-2 text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed font-semibold px-3 py-1.5 rounded-md"
-              title="Exportar para CSV"
+              disabled={metrics.length === 0 || isLoading}
+              className="flex items-center gap-2 text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 px-3 py-1.5 rounded-md"
             >
-              <ArrowDownTrayIcon className="h-5 w-5" />
-              Exportar
+              <ArrowDownTrayIcon className="h-5 w-5" /> Exportar
             </button>
             <button
               onClick={onClose}
@@ -103,7 +103,6 @@ export default function UserListModal({
           </div>
         </header>
 
-        {/* ✨ Corpo do Modal com estado de carregamento */}
         <main className="overflow-y-auto p-4">
           {isLoading ? (
             <LoadingSpinner />
@@ -132,14 +131,13 @@ export default function UserListModal({
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {/* ✨ Chave (key) trocada para user.email, que é um identificador único */}
                 {metrics.map((user) => (
                   <tr key={user.email}>
                     <td
                       className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 truncate"
-                      title={user.user_name}
+                      title={`${user.user_name} ${user.last_name ?? ""}`}
                     >
-                      {user.user_name}
+                      {user.user_name} {user.last_name ?? ""}
                     </td>
                     <td
                       className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 truncate"

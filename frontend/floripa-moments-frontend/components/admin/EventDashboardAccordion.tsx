@@ -27,6 +27,7 @@ interface Event {
 interface UserActivityMetric {
   event_slug: string | null;
   user_name: string;
+  last_name?: string | null;
   email: string;
   instagram?: string | null;
   whatsapp?: string | null;
@@ -70,6 +71,8 @@ export default function EventDashboardAccordion({
   const [isUserModalLoading, setIsUserModalLoading] = useState(false);
   const [modalMetrics, setModalMetrics] = useState<UserActivityMetric[]>([]);
   const [downloadLink, setDownloadLink] = useState("");
+  const [downloadPassword, setDownloadPassword] = useState("");
+  const [downloadExpiration, setDownloadExpiration] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [copyButtonText, setCopyButtonText] = useState("COPIAR");
 
@@ -100,6 +103,7 @@ export default function EventDashboardAccordion({
       const res = await fetch(`${API_URL}/admin/events/${event.slug}/metrics`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      console.log("Resposta da API de métricas:", res);
       if (!res.ok) throw new Error("Falha ao buscar dados dos usuários.");
       const data = await res.json();
       setModalMetrics(data);
@@ -131,6 +135,8 @@ export default function EventDashboardAccordion({
       }
       const data = await res.json();
       setDownloadLink(data.url);
+      setDownloadPassword(data.password);
+      setDownloadExpiration(data.expires_at);
     } catch (error: any) {
       console.error(error);
       alert(`Erro: ${error.message}`);
@@ -213,19 +219,33 @@ export default function EventDashboardAccordion({
                   {isGenerating ? "Gerando..." : "Gerar Link"}
                 </button>
                 {downloadLink && (
-                  <div className="flex-grow flex items-center bg-white border rounded-md p-1">
-                    <input
-                      type="text"
-                      value={downloadLink}
-                      readOnly
-                      className="w-full text-sm text-gray-600 p-1 border-none focus:ring-0"
-                    />
-                    <button
-                      onClick={handleCopyLink}
-                      className="px-3 py-1 text-xs font-bold text-white bg-gray-600 rounded hover:bg-gray-700"
-                    >
-                      {copyButtonText}
-                    </button>
+                  <div className="space-y-2">
+                    <div className="flex-grow flex items-center bg-white border rounded-md p-1">
+                      <input
+                        type="text"
+                        value={downloadLink}
+                        readOnly
+                        className="w-full text-sm text-gray-600 p-1 border-none"
+                      />
+                      <button
+                        onClick={handleCopyLink}
+                        className="px-3 py-1 text-xs font-bold text-white bg-gray-600 rounded hover:bg-gray-700"
+                      >
+                        {copyButtonText}
+                      </button>
+                    </div>
+
+                    <p className="text-sm">
+                      <strong>Senha:</strong>{" "}
+                      <span className="font-mono bg-gray-100 p-1 rounded">
+                        {downloadPassword}
+                      </span>
+                    </p>
+
+                    <p className="text-xs text-gray-500">
+                      Expira em:{" "}
+                      {new Date(downloadExpiration).toLocaleString("pt-BR")}
+                    </p>
                   </div>
                 )}
               </div>

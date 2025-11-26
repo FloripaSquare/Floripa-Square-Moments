@@ -22,7 +22,7 @@ const themes: Record<string, Theme> = {
 export default function SlugPage() {
   const router = useRouter();
   const params = useParams();
-  const slug = (params?.["slug"] as string) || "floripa-square";
+  const slug = (params?.["slug"] as string) || "fs";
   const theme = themes.default;
 
   const baseButtonClasses =
@@ -38,7 +38,6 @@ export default function SlugPage() {
         backgroundRepeat: "no-repeat",
       }}
     >
-
       {/* Botão CADASTRAR */}
       <button
         className={`${baseButtonClasses} ${theme.ghostButtonClasses} absolute left-1/2 -translate-x-1/2 top-[47%] w-[60%]`}

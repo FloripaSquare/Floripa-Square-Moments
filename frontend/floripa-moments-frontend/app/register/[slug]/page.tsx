@@ -43,7 +43,7 @@ interface Theme {
 }
 
 const themes: Record<string, Theme> = {
-  "floripa-square": {
+  fs: {
     accentColor: "#f37021",
     backgroundImage: "url('/base-moments.jpg')",
     textColor: "text-white",
@@ -51,6 +51,28 @@ const themes: Record<string, Theme> = {
     primaryButton: "bg-[#f37021] hover:bg-[#d35e1d] text-white",
     secondaryButton: "bg-white/10 text-white hover:bg-white/20",
     linkColor: "text-white",
+    linkHoverColor: "underline",
+    isDark: true,
+  },
+  kotai: {
+    accentColor: "#00fe91",
+    backgroundImage: "url('/kotai/fundo-kotai.jpg')",
+    textColor: "text-[#f2f2f3]",
+    borderColor: "border-[#67b7ff]/50",
+    primaryButton: "bg-[#00fe91] text-black hover:bg-[#05e184]",
+    secondaryButton: "bg-white/10 text-[#f2f2f3] hover:bg-white/20",
+    linkColor: "text-[#67b7ff]",
+    linkHoverColor: "underline",
+    isDark: true,
+  },
+  aegea: {
+    accentColor: "#00fe91",
+    backgroundImage: "url('/aegea/fundo-aegea.jpg')",
+    textColor: "text-[#f2f2f3]",
+    borderColor: "border-[#67b7ff]/50",
+    primaryButton: "bg-[#00fe91] text-black hover:bg-[#05e184]",
+    secondaryButton: "bg-white/10 text-[#f2f2f3] hover:bg-white/20",
+    linkColor: "text-[#67b7ff]",
     linkHoverColor: "underline",
     isDark: true,
   },

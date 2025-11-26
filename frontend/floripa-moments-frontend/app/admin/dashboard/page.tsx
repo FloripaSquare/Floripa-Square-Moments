@@ -3,14 +3,6 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { API_URL } from "@/lib/api";
-
-// Componentes e Ícones
-import CreateEventForm from "@/components/events/CreateEventForm";
-import UploadPhotosForm from "@/components/events/UploadPhotosForm";
-import CreatePhotographerForm from "@/components/events/CreatePhotographerForm";
-import EventDashboardAccordion from "@/components/admin/EventDashboardAccordion";
-import UploadMediaForm from "@/components/events/UploadMediaForm";
-
 import {
   MagnifyingGlassIcon,
   UserPlusIcon,
@@ -31,9 +23,16 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { subDays, format, parseISO } from "date-fns";
+import { subHours, subDays, format, parseISO } from "date-fns";
 import PhotoManager from "@/components/PhotoManager";
 import EventCommentsList from "@/components/events/EventCommentList";
+
+// Componentes e Ícones (importações originais omitidas para brevidade)
+import CreateEventForm from "@/components/events/CreateEventForm";
+import UploadPhotosForm from "@/components/events/UploadPhotosForm";
+import CreatePhotographerForm from "@/components/events/CreatePhotographerForm";
+import EventDashboardAccordion from "@/components/admin/EventDashboardAccordion";
+import UploadMediaForm from "@/components/events/UploadMediaForm";
 
 // --- Tipos de Dados ---
 
@@ -45,7 +44,6 @@ interface Event {
   end_time: string;
 }
 
-// ✅ FIX: Added missing user contact fields to resolve the type error.
 interface AggregatedMetric {
   event_slug: string | null;
   user_name: string;
@@ -63,7 +61,37 @@ interface RawMetric {
   created_at: string;
 }
 
-// --- Componentes Reutilizáveis (sem alterações) ---
+// --- Definição dos Intervalos de FILTRO para o GRÁFICO ---
+// O valor é o número de milissegundos a subtrair de "agora"
+const CHART_TIME_RANGES = {
+  "5 min": 5 * 60 * 1000,
+  "30 min": 30 * 60 * 1000,
+  "1 hora": 60 * 60 * 1000,
+  "4 horas": 4 * 60 * 60 * 1000,
+  "6 horas": 6 * 60 * 60 * 1000,
+  "8 horas": 8 * 60 * 60 * 1000,
+  "24 horas": 24 * 60 * 60 * 1000,
+  "3 dias": 3 * 24 * 60 * 60 * 1000,
+} as const;
+
+type ChartTimeRangeKey = keyof typeof CHART_TIME_RANGES;
+
+// --- Definição dos Intervalos de ATUALIZAÇÃO (Polling) ---
+const REFRESH_OPTIONS = {
+  Manual: 0,
+  "5 min": 5 * 60 * 1000,
+  "30 min": 30 * 60 * 1000,
+  "1 hora": 60 * 60 * 1000,
+  "4 horas": 4 * 60 * 60 * 1000,
+  "6 horas": 6 * 60 * 60 * 1000,
+  "8 horas": 8 * 60 * 60 * 1000,
+  "24 horas": 24 * 60 * 60 * 1000,
+  "3 dias": 3 * 24 * 60 * 60 * 1000,
+} as const;
+
+type RefreshIntervalKey = keyof typeof REFRESH_OPTIONS;
+
+// --- Componentes Reutilizáveis (inalterados) ---
 function StatCard({
   title,
   value,
@@ -113,7 +141,12 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [selectedEventSlug, setSelectedEventSlug] = useState<string>("");
 
-  const [timeRange, setTimeRange] = useState<"1h" | "24h" | "3D" | "7D">("24h");
+  // Polling Interval (Mantido)
+  const [refreshInterval, setRefreshInterval] =
+    useState<RefreshIntervalKey>("30 min");
+
+  // 💥 ATUALIZADO: Estado do Filtro do GRÁFICO
+  const [timeRange, setTimeRange] = useState<ChartTimeRangeKey>("24 horas");
 
   const handleLogout = useCallback(() => {
     if (window.confirm("Tem certeza que deseja sair?")) {
@@ -123,7 +156,8 @@ export default function AdminDashboardPage() {
   }, [router]);
 
   const fetchAllData = useCallback(async () => {
-    setLoading(true);
+    if (loading) setLoading(true);
+
     const token = localStorage.getItem("admin_token");
     if (!token) {
       router.push(`/admin/login`);
@@ -157,19 +191,30 @@ export default function AdminDashboardPage() {
       setActivityMetrics(Array.isArray(activityData) ? activityData : []);
     } catch (err) {
       console.error("Falha ao buscar dados do dashboard:", err);
-      setEvents([]);
-      setAggregatedMetrics([]);
-      setActivityMetrics([]);
     } finally {
       setLoading(false);
     }
-  }, [router, handleLogout]);
+  }, [router, handleLogout, loading]);
 
+  // Efeito para a primeira carga dos dados
   useEffect(() => {
     fetchAllData();
   }, [fetchAllData]);
 
-  // Cálculos Memoizados
+  // Efeito para o Polling (Atualização Automática)
+  useEffect(() => {
+    const intervalMs = REFRESH_OPTIONS[refreshInterval];
+
+    if (intervalMs > 0) {
+      const intervalId = setInterval(() => {
+        fetchAllData();
+      }, intervalMs);
+
+      return () => clearInterval(intervalId);
+    }
+  }, [refreshInterval, fetchAllData]);
+
+  // Cálculos Memoizados (inalterados)
   const { totalSearches, totalRegisters, totalDownloads } = useMemo(
     () => ({
       totalSearches: aggregatedMetrics.reduce((sum, m) => sum + m.pesquisas, 0),
@@ -223,35 +268,22 @@ export default function AdminDashboardPage() {
     );
   }, [aggregatedMetrics]);
 
+  // 💥 ATUALIZADO: Lógica do gráfico para novos intervalos
   const activityChartData = useMemo(() => {
-    const now = new Date();
-    let limitDate;
-    switch (timeRange) {
-      case "1h":
-        limitDate = new Date(now.getTime() - 1 * 60 * 60 * 1000);
-        break;
-      case "24h":
-        limitDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-        break;
-      case "3D":
-        limitDate = subDays(now, 3);
-        break;
-      case "7D":
-        limitDate = subDays(now, 7);
-        break;
-      default:
-        limitDate = subDays(now, 1);
-    }
+    const limitMs = CHART_TIME_RANGES[timeRange];
+    const limitDate = new Date(new Date().getTime() - limitMs);
+
     const filteredMetrics = activityMetrics.filter(
       (m) => parseISO(m.created_at) >= limitDate
     );
 
+    const isDayRange = limitMs >= 24 * 60 * 60 * 1000; // 24 horas ou mais
+
     const groupedData = filteredMetrics.reduce((acc, metric) => {
       const metricDate = parseISO(metric.created_at);
-      const isHourRange = ["1h", "24h"].includes(timeRange);
-      const key = isHourRange
-        ? format(metricDate, "HH:00")
-        : format(metricDate, "dd/MM");
+      const key = isDayRange
+        ? format(metricDate, "dd/MM") // Agrupa por dia
+        : format(metricDate, "HH:mm"); // Agrupa por hora/minuto
 
       if (!acc[key]) {
         acc[key] = {
@@ -292,12 +324,35 @@ export default function AdminDashboardPage() {
               Métricas e gerenciamento de eventos.
             </p>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-wrap justify-end">
+            {/* Seletor de Intervalo de Atualização (Polling) */}
+            <div className="flex items-center space-x-2 p-2 bg-white rounded-lg shadow-sm border border-gray-200">
+              <span className="text-sm font-medium text-gray-600">
+                Atualizar a cada:
+              </span>
+              <select
+                value={refreshInterval}
+                onChange={(e) =>
+                  setRefreshInterval(e.target.value as RefreshIntervalKey)
+                }
+                className="p-1 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                {Object.keys(REFRESH_OPTIONS).map((key) => (
+                  <option key={key} value={key}>
+                    {key}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {/* Botão de Atualização Manual */}
             <button
               onClick={fetchAllData}
               className="p-2 text-gray-500 hover:text-blue-600 hover:bg-gray-200 rounded-full transition-colors"
+              disabled={loading}
             >
-              <ArrowPathIcon className="h-6 w-6" />
+              <ArrowPathIcon
+                className={`h-6 w-6 ${loading ? "animate-spin" : ""}`}
+              />
             </button>
             <button
               onClick={handleLogout}
@@ -345,17 +400,18 @@ export default function AdminDashboardPage() {
         <PhotoManager userRole="ADMIN" />
         {/* Gráficos */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 mt-8">
-          {/* Atividade na Plataforma */}
+          {/* Atividade na Plataforma (ÁREA CORRIGIDA) */}
           <section className="lg:col-span-3 bg-white p-6 rounded-xl shadow">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold text-gray-700">
                 Atividade na Plataforma
               </h2>
-              <div className="flex space-x-2">
-                {["1h", "24h", "3D", "7D"].map((range) => (
+              <div className="flex flex-wrap gap-2">
+                {/* 💥 Botões de Filtro do GRÁFICO (Novos Intervalos) */}
+                {Object.keys(CHART_TIME_RANGES).map((range) => (
                   <button
                     key={range}
-                    onClick={() => setTimeRange(range as typeof timeRange)}
+                    onClick={() => setTimeRange(range as ChartTimeRangeKey)}
                     className={`px-3 py-1 text-sm rounded-md transition-colors ${
                       timeRange === range
                         ? "bg-blue-600 text-white"

@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
 import FeedbackPopup from "../comments/page";
+import Footer from "@/components/Footer";
 
 type Theme = {
   backgroundImage?: string;
@@ -11,17 +12,58 @@ type Theme = {
   primaryButton: string;
   secondaryButton: string;
   ghostButton: string;
+  tertiaryButton: string;
+
+  text: string; // 🔥 PROPRIEDADE ÚNICA DE TEXTO
 };
 
 const themes: Record<string, Theme> = {
-  "floripa-square": {
+  fs: {
     backgroundImage: "url('/base-moments.jpg')",
     textColor: "text-white",
     primaryButton: "bg-[#f37021] hover:bg-[#d35e1d] text-white",
-    secondaryButton: "bg-white/10 text-white hover:bg-white/20",
+    secondaryButton: " bg-[#C65C3C] hover:bg-[#A94C16] text-white",
     ghostButton:
       "border-2 border-white text-white hover:bg-white hover:text-[#f37021]",
+    tertiaryButton: "bg-white/10 text-white hover:bg-white/20",
+
+    text: `Olá, que bom que você está no Rooftop!
+Esta é a sua galeria oficial de fotos no evento.
+Para começar, tire uma selfie e depois clique no botão ENVIAR & BUSCAR FOTOS.`,
   },
+
+  kotai: {
+    backgroundImage: "url('/kotai/fundo-kotai.jpg')",
+    textColor: "text-white",
+    primaryButton: "bg-[#0084ff] hover:bg-[#006cd1] text-white",
+    secondaryButton: "bg-white/10 text-white hover:bg-white/20",
+    ghostButton:
+      "border-2 border-white text-white hover:bg-white hover:text-[#0084ff]",
+    tertiaryButton: "bg-white/10 text-white hover:bg-white/20",
+
+    text: `Olá que bom que você está no Kotai Summit!
+
+Esta é a sua galeria oficial de fotos no evento. Compartilhe momentos incríveis em suas redes sociais.
+
+Para começar, tire uma selfie e depois clique no botão ENVIAR & BUSCAR FOTOS.`,
+  },
+
+  aegea: {
+    backgroundImage: "url('/aegea/fundo-aegea.jpg')",
+    textColor: "text-white",
+    primaryButton: "bg-[#0084ff] hover:bg-[#006cd1] text-white",
+    secondaryButton: "bg-white/10 text-white hover:bg-white/20",
+    ghostButton:
+      "border-2 border-white text-white hover:bg-white hover:text-[#0084ff]",
+    tertiaryButton: "bg-white/10 text-white hover:bg-white/20",
+
+    text: `Olá que bom que você está no 4º Prêmio Águas de Jornalismo Ambiental!
+
+Esta é a sua galeria oficial de fotos no evento. Compartilhe momentos incríveis em suas redes sociais.
+
+Para começar, tire uma selfie e depois clique no botão ENVIAR & BUSCAR FOTOS.`,
+  },
+
   default: {
     backgroundImage: "url('/base-moments.jpg')",
     textColor: "text-white",
@@ -29,6 +71,11 @@ const themes: Record<string, Theme> = {
     secondaryButton: "bg-white/10 text-white hover:bg-white/20",
     ghostButton:
       "border-2 border-white text-white hover:bg-white hover:text-[#f37021]",
+    tertiaryButton: "bg-[#1e1e1e]/60 text-white hover:bg-[#1e1e1e]/80",
+
+    text: `Bem-vindo!
+Aqui você pode visualizar suas fotos do evento.
+Envie uma selfie para continuar.`,
   },
 };
 
@@ -82,36 +129,25 @@ export default function SelfiePage() {
     }
   };
 
-  // --- Padronização dos botões ---
   const baseButtonClasses =
     "w-full max-w-md py-3 px-5 rounded-xl font-semibold text-sm md:text-base uppercase shadow-md transition-colors duration-200 ease-in-out disabled:opacity-50";
 
+  const tertiarySmallButton = "py-2 px-4 text-xs md:text-sm rounded-lg";
+
   return (
     <main className="relative w-full h-screen flex flex-col">
-      {/* Fundo */}
       <div
         className="absolute inset-0 bg-cover bg-center"
         style={{ backgroundImage: theme.backgroundImage }}
       />
 
-      {/* Conteúdo rolável */}
       <div className="relative z-10 w-full flex-grow overflow-y-auto flex flex-col items-center px-4 pt-25 pb-10">
-        {/* Texto e selfie */}
         <div className="flex flex-col items-center gap-4 w-full">
+          {/* 🔥 TEXTO DINÂMICO */}
           <div
-            className={`max-w-[16rem] text-center space-y-2 ${theme.textColor}`}
+            className={`max-w-[16rem] text-center space-y-2 whitespace-pre-line ${theme.textColor}`}
           >
-            <p className="font-semibold text-lg">
-              Olá, que bom que você está no Rooftop!
-            </p>
-            <p className="text-sm">
-              Esta é a sua galeria oficial de fotos no evento. Compartilhe com
-              suas redes sociais momentos incríveis.
-            </p>
-            <p className="text-sm">
-              Para começar, tire uma selfie e depois clique no botão ENVIAR &
-              BUSCAR FOTOS.
-            </p>
+            {theme.text}
           </div>
 
           {!selfiePreview ? (
@@ -164,22 +200,9 @@ export default function SelfiePage() {
             disabled={loading || !selfie}
             className={`${baseButtonClasses} ${theme.primaryButton} mt-3`}
           >
-            {loading ? "Enviando..." : "Enviar & Buscar Fotos"}
+            {loading ? "Enviando..." : "Enviar & buscar suas fotos"}
           </button>
-        </div>
 
-        {/* Separador */}
-        <div className="w-1/2 max-w-xs h-px bg-white/20 my-8" />
-
-        {/* Botões secundários */}
-        <div className="w-full flex flex-col items-center gap-3">
-          <button
-            type="button"
-            className={`${baseButtonClasses} ${theme.secondaryButton}`}
-            onClick={() => router.push(`/${slug}/pesquisa`)}
-          >
-            Pesquisa de Satisfação
-          </button>
           <button
             type="button"
             className={`${baseButtonClasses} ${theme.secondaryButton}`}
@@ -187,6 +210,7 @@ export default function SelfiePage() {
           >
             Fotos Gerais
           </button>
+
           <button
             type="button"
             className={`${baseButtonClasses} ${theme.secondaryButton}`}
@@ -194,13 +218,27 @@ export default function SelfiePage() {
           >
             Vídeos
           </button>
-        <FeedbackPopup 
-          slug={slug} 
-          buttonClass={`${baseButtonClasses} ${theme.secondaryButton}`} // botão externo
-          modalButtonClass={`${baseButtonClasses} ${theme.primaryButton}`} // botão dentro do modal
-        />
+        </div>
+
+        <div className="w-1/2 max-w-xs h-px bg-white/20 my-8" />
+
+        <div className="w-full flex flex-col items-center gap-3">
+          <button
+            type="button"
+            className={`${tertiarySmallButton} ${theme.tertiaryButton} w-full max-w-md`}
+            onClick={() => router.push(`/${slug}/pesquisa`)}
+          >
+            Pesquisa de Satisfação
+          </button>
+
+          <FeedbackPopup
+            slug={slug}
+            buttonClass={`${tertiarySmallButton} ${theme.tertiaryButton} w-full max-w-md`}
+            modalButtonClass={`${baseButtonClasses} ${theme.primaryButton}`}
+          />
         </div>
       </div>
+      <Footer />
     </main>
   );
 }

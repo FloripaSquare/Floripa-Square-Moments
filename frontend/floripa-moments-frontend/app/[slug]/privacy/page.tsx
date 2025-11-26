@@ -19,7 +19,7 @@ interface Theme {
 
 // Objeto de temas, espelhando a lógica da sua RegisterPage
 const themes: Record<string, Theme> = {
-  "floripa-square": {
+  fs: {
     bgImageSrc: "/base-moments.jpg", // Imagem de fundo escura
     overlayColor: "bg-orange",
     cardBg: "bg-orange/50 backdrop-blur-md", // Fundo do card escuro
@@ -29,6 +29,28 @@ const themes: Record<string, Theme> = {
     linkColor: "text-yellow-300 underline",
     quoteBorder: "border-yellow-400",
     quoteText: "text-yellow-200",
+  },
+  kotai: {
+    bgImageSrc: "/kotai/fundo-kotai.jpg",
+    overlayColor: "bg-black/40",
+    cardBg: "bg-black/50 backdrop-blur-md",
+    titleColor: "text-white",
+    bodyColor: "text-gray-200",
+    mutedColor: "text-gray-300",
+    linkColor: "text-blue-400 underline",
+    quoteBorder: "border-blue-500",
+    quoteText: "text-blue-300",
+  },
+  aegea: {
+    bgImageSrc: "/aegea/fundo-aegea.jpg",
+    overlayColor: "bg-black/40",
+    cardBg: "bg-black/50 backdrop-blur-md",
+    titleColor: "text-white",
+    bodyColor: "text-gray-200",
+    mutedColor: "text-gray-300",
+    linkColor: "text-blue-400 underline",
+    quoteBorder: "border-blue-500",
+    quoteText: "text-blue-300",
   },
   default: {
     bgImageSrc: "", // Sem imagem de fundo, usará um sólido

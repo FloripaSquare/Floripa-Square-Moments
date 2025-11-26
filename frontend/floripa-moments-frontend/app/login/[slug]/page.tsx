@@ -22,7 +22,7 @@ interface Theme {
 }
 
 const themes: Record<string, Theme> = {
-  "floripa-square": {
+  fs: {
     name: "Floripa Square",
     backgroundImage: "url('/base-moments.jpg')",
     textColor: "text-white",
@@ -37,6 +37,51 @@ const themes: Record<string, Theme> = {
     alertSuccessBg: "bg-green-50",
     alertSuccessText: "text-green-700",
   },
+  kotai: {
+    name: "Kotai",
+    backgroundImage: "url('/kotai/fundo-kotai.jpg')",
+
+    // TEXTOS
+    textColor: "text-[#f2f2f3]",
+
+    // INPUTS
+    inputBg: "bg-white/90",
+    inputBorder: "border-[#67b7ff]/50",
+    placeholderColor: "placeholder-gray-500",
+
+    // BOTÃO — Verde Neon (#00fe91)
+    buttonBg: "bg-[#00fe91]",
+    buttonTextColor: "text-black",
+    buttonBorder: "border-[#00fe91]",
+    // ALERTAS
+    alertErrorBg: "bg-red-100",
+    alertErrorText: "text-red-700",
+    // Sucesso em azul claro (#67b7ff)
+    alertSuccessBg: "bg-[#67b7ff]/20",
+    alertSuccessText: "text-[#67b7ff]",
+  },
+  aegea: {
+    name: "Aegea",
+    backgroundImage: "url('/aegea/fundo-aegea.jpg')",
+    
+    // TEXTOS
+    textColor: "text-[#f2f2f3]",
+    // INPUTS
+    inputBg: "bg-white/90",
+    inputBorder: "border-[#67b7ff]/50",
+    placeholderColor: "placeholder-gray-500",
+    // BOTÃO — Verde Neon (#00fe91)
+    buttonBg: "bg-[#00fe91]",
+    buttonTextColor: "text-black",
+    buttonBorder: "border-[#00fe91]",
+    // ALERTAS
+    alertErrorBg: "bg-red-100",
+    alertErrorText: "text-red-700",
+    // Sucesso em azul claro (#67b7ff)
+    alertSuccessBg: "bg-[#67b7ff]/20",
+    alertSuccessText: "text-[#67b7ff]",
+  },
+
   default: {
     name: "Floripa Square",
     backgroundImage: "url('/base-moments.jpg')",

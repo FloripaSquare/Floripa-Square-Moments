@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useRef, memo } from "react";
 import { ArrowDownTrayIcon, ArrowPathIcon } from "@heroicons/react/24/solid";
+import Footer from "@/components/Footer";
 
 // --- Tipos ---
 type SearchItem = { key: string; url: string };
@@ -137,22 +138,52 @@ export default function ResultPage() {
     if (lastSegment && lastSegment !== "preview") {
       setSlug(lastSegment);
     } else {
-      setSlug(localStorage.getItem("current_event_slug") || "floripa-square");
+      setSlug(localStorage.getItem("current_event_slug") || "fs");
     }
   }, []);
 
   // --- Carregar resultados ---
   useEffect(() => {
-    const stored = localStorage.getItem("search_result");
-    if (stored) {
-      const result = JSON.parse(stored) as SearchOut;
-      const unique = Array.from(
-        new Map(result.items.map((i) => [i.key, i])).values()
-      );
-      setSearchResult({ count: unique.length, items: unique });
-      setDisplayItems(unique.slice(0, perPage));
+    async function loadResults() {
+      const token = localStorage.getItem("user_token");
+      if (!token) {
+        console.warn("Nenhum token encontrado. Usuário precisa logar.");
+        return;
+      }
+
+      try {
+        const API_URL = process.env.NEXT_PUBLIC_API_URL!;
+        const res = await fetch(`${API_URL}/search/photos?slug=${slug}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (!res.ok) {
+          // Caso o token tenha expirado
+          if (res.status === 401) {
+            console.log("Token expirado, solicitar login.");
+            return;
+          }
+          throw new Error("Erro ao buscar fotos");
+        }
+
+        const data = (await res.json()) as SearchOut;
+
+        const unique = Array.from(
+          new Map(data.items.map((i) => [i.key, i])).values()
+        );
+
+        setSearchResult({ count: unique.length, items: unique });
+        setDisplayItems(unique.slice(0, perPage));
+
+        // opcional: manter versão cacheada
+        localStorage.setItem("search_result", JSON.stringify(data));
+      } catch (err) {
+        console.error("Falha ao carregar resultados:", err);
+      }
     }
-  }, []);
+
+    if (slug) loadResults();
+  }, [slug]);
 
   // --- Scroll infinito ---
   useEffect(() => {
@@ -229,12 +260,3 @@ function StateMessage({
     </main>
   );
 }
-
-// --- Footer ---
-const Footer = () => (
-  <footer className="py-6 text-center text-sm text-gray-500">
-    <p>
-      &copy; {new Date().getFullYear()} PhotoFind. Todos os direitos reservados.
-    </p>
-  </footer>
-);
