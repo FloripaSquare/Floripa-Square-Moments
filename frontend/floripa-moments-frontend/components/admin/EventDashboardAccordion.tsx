@@ -244,7 +244,11 @@ export default function EventDashboardAccordion({
 
                     <p className="text-xs text-gray-500">
                       Expira em:{" "}
-                      {new Date(downloadExpiration).toLocaleString("pt-BR")}
+                      {new Date(
+                        downloadExpiration
+                          .replace(" ", "T")
+                          .replace(" -0300", "-03:00")
+                      ).toLocaleString("pt-BR")}
                     </p>
                   </div>
                 )}
