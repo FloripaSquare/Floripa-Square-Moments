@@ -61,9 +61,10 @@ async def update_event(slug: str, payload: UpdateEventIn, conn: AsyncSession = D
 
 # --- GERAÇÃO DE LINK PARA DOWNLOAD (sem alterações) ---
 
+# ✅ response_model usa o DownloadLinkOut importado, que contém url, password e expires_at
 @router.post("/events/{slug}/generate-download-link", response_model=DownloadLinkOut)
 async def generate_download_link(slug: str, conn: AsyncSession = Depends(get_conn)):
-    password = secrets.token_hex(3)  # EX: "9af3bd"
+    password = secrets.token_hex(3)
     expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
 
     zip_url = await downloads_service.generate_event_photos_zip_url(slug)
@@ -78,14 +79,12 @@ async def generate_download_link(slug: str, conn: AsyncSession = Depends(get_con
     )
     await conn.commit()
 
+    # O retorno deve ser compatível com o schema (DownloadLinkOut)
     return {
         "url": f"https:/moments-floripasquare.com.br/{slug}/download",
         "password": password,
         "expires_at": expires_at,
     }
-
-# --- ROTAS DE MÉTRICAS (CORRIGIDAS E COMPLETAS) ---
-
 @router.get("/metrics", response_model=List[AdminMetricSummary])
 async def all_aggregated_metrics(conn: AsyncSession = Depends(get_conn)):
     """
