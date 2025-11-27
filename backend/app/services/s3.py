@@ -96,3 +96,18 @@ async def list_s3_files(prefix: str, bucket: str = BUCKET_RAW):
     except (BotoCoreError, ClientError) as e:
         print(f"[S3] ⚠️ Erro ao listar arquivos do prefixo {prefix}: {e}")
     return items
+
+def delete_object(bucket: str, key: str) -> None:
+    """
+    Remove o objeto do S3. Lança HTTPException(500) em caso de erro fatal.
+    """
+    try:
+        s3.delete_object(Bucket=bucket, Key=key)
+        print(f"[S3] 🗑️ Removido: s3://{bucket}/{key}")
+    except (BotoCoreError, ClientError) as e:
+        # Loga e lança para o caller decidir como tratar
+        print(f"[S3] ❌ Falha ao apagar s3://{bucket}/{key}: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro ao apagar arquivo no S3: {e}")
+    except Exception as e:
+        print(f"[S3] ❌ Erro inesperado ao apagar s3://{bucket}/{key}: {e}")
+        raise HTTPException(status_code=500, detail="Erro inesperado ao apagar arquivo no S3")

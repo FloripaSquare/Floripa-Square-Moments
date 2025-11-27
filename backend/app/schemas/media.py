@@ -12,9 +12,14 @@ from .base import metadata
 
 
 # ENUM do banco
+class MediaType(str, enum.Enum):
+    GENERAL = "general"
+    VIDEOS = "videos"
+
 class MediaTypeDB(str, enum.Enum):
     GENERAL = "general"
     VIDEOS = "videos"
+
 
 
 # Tabela SQLAlchemy

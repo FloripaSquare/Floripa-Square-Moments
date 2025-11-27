@@ -7,90 +7,80 @@ from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.schemas.media import MediaOut, MediaType, media_table
-# adapte os imports conforme seu projeto
 from app.services.db import get_conn
-from app.schemas.photo import PhotoResponse  # se você já tem
-from app.schemas.photo import photos_table   # sua Table SQLAlchemy
+from app.schemas.photo import PhotoResponse, photos_table
+
 from app.services.s3 import BUCKET_RAW, s3, presign_get
 
 router = APIRouter()
 
+# ===============================
+#     FOTOS DO EVENTO
+# ===============================
 
 @router.get("/{event_slug}", response_model=List[PhotoResponse])
 async def get_photos_for_event(
-        event_slug: str,
-        uploader_id: Optional[PyUUID] = Query(None),
-        db: AsyncSession = Depends(get_conn)
+    event_slug: str,
+    uploader_id: Optional[PyUUID] = Query(None),
+    db: AsyncSession = Depends(get_conn)
 ):
-    # Base da query
     query = select(photos_table).where(photos_table.c.event_slug == event_slug)
 
-    # Se for fotógrafo, filtra pelo uploader_id
     if uploader_id:
         query = query.where(photos_table.c.uploader_id == uploader_id)
 
     result = await db.execute(query)
-    photos_from_db = result.all()
+    photos = result.all()
 
     response_data = []
-    for photo_row in photos_from_db:
-        photo_dict = dict(photo_row._mapping)
-        photo_dict["s3_url"] = presign_get(BUCKET_RAW, photo_dict["s3_key"])
-        response_data.append(photo_dict)
+    for row in photos:
+        p = dict(row._mapping)
+        p["s3_url"] = presign_get(BUCKET_RAW, p["s3_key"])
+        response_data.append(p)
 
     return response_data
 
-    return response_data
-@router.delete("/{photo_id}")
+
+@router.delete("/photo/{photo_id}")
 async def delete_photo(
     photo_id: str,
-    session: AsyncSession = Depends(get_conn),
+    db: AsyncSession = Depends(get_conn)
 ):
-    """
-    Exclui uma foto:
-    - Remove o arquivo do S3 (Bucket RAW)
-    - Remove o registro do banco
-    """
     try:
-        # Verifica se existe
-        try:
-            photo_uuid = uuid.UUID(photo_id)
-        except ValueError:
-            raise HTTPException(status_code=400, detail="photo_id inválido (deve ser UUID)")
+        photo_uuid = uuid.UUID(photo_id)
+    except:
+        raise HTTPException(400, "photo_id inválido")
 
-        result = await session.execute(
+    row = (
+        await db.execute(
             select(photos_table.c.s3_key).where(photos_table.c.id == photo_uuid)
         )
-        row = result.first()
+    ).first()
 
-        if not row:
-            raise HTTPException(status_code=404, detail="Foto não encontrada")
+    if not row:
+        raise HTTPException(404, "Foto não encontrada")
 
-        s3_key = row.s3_key
+    s3_key = row.s3_key
 
-        # Remove do S3
-        try:
-            s3.delete_object(Bucket=BUCKET_RAW, Key=s3_key)
-        except Exception as s3_err:
-            print(f"[S3] Falha ao apagar {s3_key}: {s3_err}")
-
-        # Remove do banco
-        await session.execute(delete(photos_table).where(photos_table.c.id == photo_uuid))
-        await session.commit()
-
-        return {"ok": True, "message": f"Foto {photo_id} excluída com sucesso."}
-
-    except HTTPException:
-        raise
+    try:
+        s3.delete_object(Bucket=BUCKET_RAW, Key=s3_key)
     except Exception as e:
-        print(f"[photos.delete_photo] erro: {e}")
-        raise HTTPException(status_code=500, detail="Erro ao excluir foto")
+        print("[S3] erro ao excluir:", e)
 
+    await db.execute(delete(photos_table).where(photos_table.c.id == photo_uuid))
+    await db.commit()
+
+    return {"ok": True, "message": "Foto excluída com sucesso"}
+
+
+# ===============================
+#          MÍDIAS DO EVENTO
+# ===============================
 
 @router.get("/{event_slug}/media", response_model=List[MediaOut])
-async def get_media(
+async def get_media_for_event(
     event_slug: str,
-    media_type: Optional[MediaType] = None,
+    media_type: Optional[MediaType] = Query(None),
     uploader_id: Optional[uuid.UUID] = Query(None),
     db: AsyncSession = Depends(get_conn)
 ):
@@ -102,15 +92,16 @@ async def get_media(
     if uploader_id:
         query = query.where(media_table.c.uploader_id == uploader_id)
 
-    rows = (await db.execute(query)).all()
+    result = await db.execute(query)
+    rows = result.all()
 
-    result = []
+    items = []
     for row in rows:
-        item = dict(row._mapping)
-        item["s3_url"] = presign_get(BUCKET_RAW, item["s3_key"])
-        result.append(item)
+        m = dict(row._mapping)
+        m["s3_url"] = presign_get(BUCKET_RAW, m["s3_key"])
+        items.append(m)
 
-    return result
+    return items
 
 
 @router.delete("/media/{media_id}")
@@ -137,9 +128,9 @@ async def delete_media(
     try:
         s3.delete_object(Bucket=BUCKET_RAW, Key=s3_key)
     except Exception as e:
-        print("Erro S3:", e)
+        print("[S3] erro:", e)
 
     await db.execute(delete(media_table).where(media_table.c.id == media_uuid))
     await db.commit()
 
-    return {"ok": True}
+    return {"ok": True, "message": "Mídia excluída com sucesso"}
