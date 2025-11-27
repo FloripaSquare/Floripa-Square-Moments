@@ -51,8 +51,8 @@ const themes: Record<string, Theme> = {
   },
   default: {
     backgroundImage: 'url("rooftop/login-moments.png")',
-    primaryButtonClasses: "text-[#ffff]pb-2 ",
-    ghostButtonClasses: " text-[#ffff] mt-2",
+    primaryButtonClasses: "text-[#ffff]",
+    ghostButtonClasses: "text-[#ffff]",
     textColor: "text-white",
     logo: "/logos/fs-logo.png",
     registerButtonMarginClasses: "mb-11",
