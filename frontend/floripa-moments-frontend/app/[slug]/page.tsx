@@ -44,7 +44,7 @@ const themes: Record<string, Theme> = {
     textColor: "text-[#f2f2f3]",
     logo: "/aegea/logo-aegea.png",
     // Ajustado para dar um respiro entre Cadastrar e Login
-    registerButtonMarginClasses: "mb-11",
+    registerButtonMarginClasses: "mb-13",
     // 🔑 MUDANÇA AQUI: Alinha o bloco todo ao final, e pb-10 (2.5rem) o empurra para cima.
     contentClasses: "justify-end pb-63",
   },

@@ -45,7 +45,9 @@ Para começar, tire uma selfie e depois clique no botão ENVIAR & BUSCAR FOTOS.`
 
 Esta é a sua galeria oficial de fotos no evento. Compartilhe momentos incríveis em suas redes sociais.
 
-Para começar, tire uma selfie e depois clique no botão ENVIAR & BUSCAR FOTOS.`,
+Para começar, tire uma selfie
+e depois clique no botão
+ENVIAR & BUSCAR FOTOS.`,
   },
 
   aegea: {
@@ -60,7 +62,8 @@ Para começar, tire uma selfie e depois clique no botão ENVIAR & BUSCAR FOTOS.`
     text: `Olá que bom que você está no 
     4º Prêmio Águas de Jornalismo Ambiental!
 
-    Esta é a sua galeria oficial de fotos no evento.
+    Esta é a sua galeria oficial de fotos
+    no evento.
     Compartilhe momentos incríveis em suas redes sociais.
     Para começar, tire uma selfie e depois clique no botão
     ENVIAR & BUSCAR FOTOS.`,
@@ -227,7 +230,7 @@ export default function SelfiePage() {
         <div className="w-full flex flex-col items-center gap-3">
           <button
             type="button"
-            className={`${tertiarySmallButton} ${theme.tertiaryButton} w-full max-w-md`}
+            className={`${tertiarySmallButton} ${theme.tertiaryButton}`}
             onClick={() => router.push(`/${slug}/pesquisa`)}
           >
             Pesquisa de Satisfação
@@ -235,7 +238,7 @@ export default function SelfiePage() {
 
           <FeedbackPopup
             slug={slug}
-            buttonClass={`${tertiarySmallButton} ${theme.tertiaryButton} w-full max-w-md`}
+            buttonClass={`${tertiarySmallButton} ${theme.tertiaryButton}`}
             modalButtonClass={`${baseButtonClasses} ${theme.primaryButton}`}
           />
         </div>
