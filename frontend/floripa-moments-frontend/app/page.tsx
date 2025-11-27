@@ -17,10 +17,10 @@ type Theme = {
 const themes: Record<string, Theme> = {
   fs: {
     backgroundImage: 'url("rooftop/login-moments.png")',
-    primaryButtonClasses:
-      "bg-white text-orange-600 font-bold hover:bg-gray-200",
-    ghostButtonClasses:
-      "border-2 border-white text-white hover:bg-white hover:text-orange-600",
+    primaryButtonClasses: "text-[#ffff]",
+
+    ghostButtonClasses: "text-[#ffff]",
+
     textColor: "text-white",
     logo: "/logos/fs-logo.png",
     registerButtonMarginClasses: "mb-11",
