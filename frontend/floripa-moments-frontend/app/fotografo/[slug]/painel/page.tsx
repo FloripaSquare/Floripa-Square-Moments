@@ -116,7 +116,6 @@ export default function PhotographerPanel() {
             />
           </section>
         </div>
-        <MediaManager eventSlug={userData.event_slug} />
       </main>
       <Footer />
     </>
