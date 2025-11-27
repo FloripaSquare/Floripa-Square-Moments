@@ -63,8 +63,8 @@ ENVIAR & BUSCAR FOTOS.`,
     4º Prêmio Águas de Jornalismo Ambiental!
 
     Esta é a sua galeria oficial de fotos
-    no evento.
-    Compartilhe momentos incríveis em suas redes sociais.
+    no evento. Compartilhe momentos incríveis em suas redes sociais.
+
     Para começar, tire uma selfie e depois clique no botão
     ENVIAR & BUSCAR FOTOS.`,
   },

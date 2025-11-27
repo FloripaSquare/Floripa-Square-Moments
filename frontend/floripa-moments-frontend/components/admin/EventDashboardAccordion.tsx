@@ -72,6 +72,7 @@ export default function EventDashboardAccordion({
   const [modalMetrics, setModalMetrics] = useState<UserActivityMetric[]>([]);
   const [downloadLink, setDownloadLink] = useState("");
   const [downloadPassword, setDownloadPassword] = useState("");
+  // ✅ ADICIONADA VARIÁVEL DE ESTADO PARA A DATA DE EXPIRAÇÃO
   const [downloadExpiration, setDownloadExpiration] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [copyButtonText, setCopyButtonText] = useState("COPIAR");
@@ -116,10 +117,12 @@ export default function EventDashboardAccordion({
     }
   };
 
-  // ✅ LÓGICA DE GERAR LINK RESTAURADA
+  // ✅ LÓGICA DE GERAR LINK CORRIGIDA: Capturando a data de expiração
   const handleGenerateLink = async () => {
     setIsGenerating(true);
     setDownloadLink("");
+    setDownloadPassword(""); // Limpar password anterior
+    setDownloadExpiration(""); // Limpar expiration anterior
     try {
       const token = localStorage.getItem("admin_token");
       const res = await fetch(
@@ -136,6 +139,7 @@ export default function EventDashboardAccordion({
       const data = await res.json();
       setDownloadLink(data.url);
       setDownloadPassword(data.password);
+      setDownloadExpiration(data.expires_at); // 👈 CAPTURANDO O DADO
     } catch (error: any) {
       console.error(error);
       alert(`Erro: ${error.message}`);
@@ -240,6 +244,13 @@ export default function EventDashboardAccordion({
                         {downloadPassword}
                       </span>
                     </p>
+                    {/* 👇 EXIBINDO A VALIDADE */}
+                    {downloadExpiration && (
+                      <p className="text-xs text-gray-500">
+                        Válido até:{" "}
+                        {new Date(downloadExpiration).toLocaleString("pt-BR")}
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
