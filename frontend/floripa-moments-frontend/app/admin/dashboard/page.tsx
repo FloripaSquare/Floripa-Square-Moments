@@ -62,6 +62,12 @@ interface RawMetric {
   created_at: string;
 }
 
+interface MediaItem {
+  id: string;
+  s3_url: string;
+  type?: "image" | "video"; // opcional
+}
+
 // --- Definição dos Intervalos de FILTRO para o GRÁFICO ---
 // O valor é o número de milissegundos a subtrair de "agora"
 const CHART_TIME_RANGES = {
@@ -135,6 +141,9 @@ export default function AdminDashboardPage() {
   const router = useRouter();
 
   const [events, setEvents] = useState<Event[]>([]);
+  const [selectedMediaEventSlug, setSelectedMediaEventSlug] =
+    useState<string>("");
+
   const [aggregatedMetrics, setAggregatedMetrics] = useState<
     AggregatedMetric[]
   >([]);
@@ -146,6 +155,8 @@ export default function AdminDashboardPage() {
   const [refreshInterval, setRefreshInterval] =
     useState<RefreshIntervalKey>("30 min");
 
+  const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
+
   // 💥 ATUALIZADO: Estado do Filtro do GRÁFICO
   const [timeRange, setTimeRange] = useState<ChartTimeRangeKey>("24 horas");
 
@@ -155,6 +166,29 @@ export default function AdminDashboardPage() {
       router.push("/admin/login");
     }
   }, [router]);
+
+  const fetchEventMedia = useCallback(async (eventSlug: string) => {
+    if (!eventSlug) return;
+
+    const token = localStorage.getItem("admin_token");
+    if (!token) return;
+
+    try {
+      const res = await fetch(`${API_URL}/photos/${eventSlug}/media`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setMediaItems(Array.isArray(data) ? data : []);
+      } else {
+        setMediaItems([]);
+        console.error("Falha ao carregar mídias do evento", res.status);
+      }
+    } catch (err) {
+      console.error("Erro ao buscar mídias:", err);
+      setMediaItems([]);
+    }
+  }, []);
 
   const fetchAllData = useCallback(async () => {
     if (loading) setLoading(true);
@@ -612,8 +646,63 @@ export default function AdminDashboardPage() {
             <h2 className="text-2xl font-semibold mb-4 text-gray-700">
               Upload de Mídia
             </h2>
-            <UploadMediaForm events={events} onUploaded={fetchAllData} />
-            <MediaManager eventSlug={selectedEventSlug} />
+
+            <div className="mb-4">
+              <label
+                htmlFor="mediaEventSelect"
+                className="block text-sm font-medium text-gray-600 mb-2"
+              >
+                Selecione um evento:
+              </label>
+              <select
+                id="mediaEventSelect"
+                value={selectedMediaEventSlug}
+                onChange={(e) => {
+                  const slug = e.target.value;
+                  setSelectedMediaEventSlug(slug);
+                  fetchEventMedia(slug); // ⬅️ busca mídias aqui
+                }}
+                className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">-- Escolha um evento --</option>
+                {events.map((event) => (
+                  <option key={event.slug} value={event.slug}>
+                    {event.title} ({event.slug})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {selectedMediaEventSlug ? (
+              <>
+                <UploadMediaForm
+                  events={[
+                    {
+                      slug: selectedMediaEventSlug,
+                      title: selectedMediaEventSlug,
+                    },
+                  ]}
+                  onUploaded={() => fetchAllData()}
+                />
+                <div className="mt-6">
+                  <MediaManager
+                    mediaItems={mediaItems}
+                    onDelete={async (id) => {
+                      await fetch(`${API_URL}/photos/media/${id}`, {
+                        method: "DELETE",
+                      });
+
+                      // remove do estado local
+                      setMediaItems((prev) => prev.filter((m) => m.id !== id));
+                    }}
+                  />
+                </div>
+              </>
+            ) : (
+              <p className="text-gray-500">
+                Selecione um evento para enviar mídias.
+              </p>
+            )}
           </section>
         </div>
       </div>
