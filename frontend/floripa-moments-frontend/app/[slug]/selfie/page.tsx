@@ -21,11 +21,11 @@ const themes: Record<string, Theme> = {
   fs: {
     backgroundImage: "url('/base-moments.png')",
     textColor: "text-white",
-    primaryButton: "bg-[#f37021] hover:bg-[#d35e1d] text-white",
-    secondaryButton: " bg-[#C65C3C] hover:bg-[#A94C16] text-white",
+    primaryButton: "bg-[#f37021] hover:bg-[#d35e1d] text-white w-80",
+    secondaryButton: " bg-[#C65C3C] hover:bg-[#A94C16] text-white w-80",
     ghostButton:
-      "border-2 border-white text-white hover:bg-white hover:text-[#f37021]",
-    tertiaryButton: "bg-white/10 text-white hover:bg-white/20",
+      "border-2 border-white text-white hover:bg-white hover:text-[#f37021] w-80",
+    tertiaryButton: "bg-white/10 text-white hover:bg-white/20 w-80",
 
     text: `Olá, que bom que você está no Rooftop!
 Esta é a sua galeria oficial de fotos no evento.
@@ -36,10 +36,10 @@ Para começar, tire uma selfie e depois clique no botão ENVIAR & BUSCAR FOTOS.`
     backgroundImage: "url('/kotai/fundo-kotai.png')",
     textColor: "text-white",
     primaryButton: "bg-[#0084ff] hover:bg-[#006cd1] text-white",
-    secondaryButton: "bg-white/10 text-white hover:bg-white/20",
+    secondaryButton: "bg-white/10 text-white hover:bg-white/20 w-80",
     ghostButton:
       "border-2 border-white text-white hover:bg-white hover:text-[#0084ff]",
-    tertiaryButton: "bg-white/10 text-white hover:bg-white/20",
+    tertiaryButton: "bg-white/10 text-white hover:bg-white/20 w-80",
 
     text: `Olá que bom que você está no Kotai Summit!
 
@@ -51,15 +51,17 @@ Para começar, tire uma selfie e depois clique no botão ENVIAR & BUSCAR FOTOS.`
   aegea: {
     backgroundImage: "url('/aegea/fundo-aegea.png')",
     textColor: "text-white",
-    primaryButton: "bg-[#0084ff] hover:bg-[#006cd1] text-white",
-    secondaryButton: "bg-white/10 text-white hover:bg-white/20",
+    primaryButton: "bg-[#0084ff] hover:bg-[#006cd1] text-white w-70",
+    secondaryButton: "bg-white/10 text-white hover:bg-white/20 w-70",
     ghostButton:
       "border-2 border-white text-white hover:bg-white hover:text-[#0084ff]",
-    tertiaryButton: "bg-white/10 text-white hover:bg-white/20",
+    tertiaryButton: "bg-white/10 text-white hover:bg-white/20 w-70",
 
     text: `Olá que bom que você está no 
     4º Prêmio Águas de Jornalismo Ambiental!
-    Esta é a sua galeria oficial de fotos no evento. Compartilhe momentos incríveis em suas redes sociais.
+
+    Esta é a sua galeria oficial de fotos no evento.
+    Compartilhe momentos incríveis em suas redes sociais.
     Para começar, tire uma selfie e depois clique no botão
     ENVIAR & BUSCAR FOTOS.`,
   },
@@ -67,8 +69,8 @@ Para começar, tire uma selfie e depois clique no botão ENVIAR & BUSCAR FOTOS.`
   default: {
     backgroundImage: "url('/rooftop/base-moments.png')",
     textColor: "text-white",
-    primaryButton: "bg-[#f37021] hover:bg-[#d35e1d] text-white",
-    secondaryButton: "bg-white/10 text-white hover:bg-white/20",
+    primaryButton: "bg-[#f37021] hover:bg-[#d35e1d] text-white w-80",
+    secondaryButton: "bg-white/10 text-white hover:bg-white/20 w-80",
     ghostButton:
       "border-2 border-white text-white hover:bg-white hover:text-[#f37021]",
     tertiaryButton: "bg-[#1e1e1e]/60 text-white hover:bg-[#1e1e1e]/80",
@@ -142,10 +144,10 @@ export default function SelfiePage() {
       />
 
       <div className="relative z-10 w-full flex-grow overflow-y-auto flex flex-col items-center px-4 pt-25 pb-10">
-        <div className="flex flex-col items-center gap-4 w-full">
+        <div className="flex flex-col items-center gap-4 w-80">
           {/* 🔥 TEXTO DINÂMICO */}
           <div
-            className={`max-w-[16rem] text-center space-y-2 whitespace-pre-line ${theme.textColor}`}
+            className={` text-center space-y-2 whitespace-pre-line ${theme.textColor}`}
           >
             {theme.text}
           </div>
