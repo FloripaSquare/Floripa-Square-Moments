@@ -20,7 +20,7 @@ interface Theme {
 // Objeto de temas, espelhando a lógica da sua RegisterPage
 const themes: Record<string, Theme> = {
   fs: {
-    bgImageSrc: "/base-moments.jpg", // Imagem de fundo escura
+    bgImageSrc: "/rooftop/base-moments.png", // Imagem de fundo escura
     overlayColor: "bg-orange",
     cardBg: "bg-orange/50 backdrop-blur-md", // Fundo do card escuro
     titleColor: "text-white",
@@ -31,7 +31,7 @@ const themes: Record<string, Theme> = {
     quoteText: "text-yellow-200",
   },
   kotai: {
-    bgImageSrc: "/kotai/fundo-kotai.jpg",
+    bgImageSrc: "/kotai/fundo-kotai.png",
     overlayColor: "bg-black/40",
     cardBg: "bg-black/50 backdrop-blur-md",
     titleColor: "text-white",
@@ -42,7 +42,7 @@ const themes: Record<string, Theme> = {
     quoteText: "text-blue-300",
   },
   aegea: {
-    bgImageSrc: "/aegea/fundo-aegea.jpg",
+    bgImageSrc: "/aegea/fundo-aegea.png",
     overlayColor: "bg-black/40",
     cardBg: "bg-black/50 backdrop-blur-md",
     titleColor: "text-white",

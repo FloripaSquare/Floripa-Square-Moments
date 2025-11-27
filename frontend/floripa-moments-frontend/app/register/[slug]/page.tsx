@@ -45,7 +45,7 @@ interface Theme {
 const themes: Record<string, Theme> = {
   fs: {
     accentColor: "#f37021",
-    backgroundImage: "url('/base-moments.jpg')",
+    backgroundImage: "url('/rooftop/base-moments.png')",
     textColor: "text-white",
     borderColor: "border-white/50",
     primaryButton: "bg-[#f37021] hover:bg-[#d35e1d] text-white",
@@ -56,7 +56,7 @@ const themes: Record<string, Theme> = {
   },
   kotai: {
     accentColor: "#00fe91",
-    backgroundImage: "url('/kotai/fundo-kotai.jpg')",
+    backgroundImage: "url('/kotai/fundo-kotai.png')",
     textColor: "text-[#f2f2f3]",
     borderColor: "border-[#67b7ff]/50",
     primaryButton: "bg-[#00fe91] text-black hover:bg-[#05e184]",
@@ -67,7 +67,7 @@ const themes: Record<string, Theme> = {
   },
   aegea: {
     accentColor: "#00fe91",
-    backgroundImage: "url('/aegea/fundo-aegea.jpg')",
+    backgroundImage: "url('/aegea/fundo-aegea.png')",
     textColor: "text-[#f2f2f3]",
     borderColor: "border-[#67b7ff]/50",
     primaryButton: "bg-[#00fe91] text-black hover:bg-[#05e184]",

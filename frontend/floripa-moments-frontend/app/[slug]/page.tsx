@@ -4,66 +4,60 @@ import Footer from "@/components/Footer";
 import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
 
-// 🔥 1. Interface + propriedade de logo
 type Theme = {
   backgroundImage: string;
   primaryButtonClasses: string;
   ghostButtonClasses: string;
+  registerButtonMarginClasses: string;
   textColor: string;
-  logo: string; // <= LOGO DINÂMICA
+  logo: string;
+  contentClasses: string;
 };
 
 const themes: Record<string, Theme> = {
   fs: {
-    backgroundImage: 'url("/bg-moments.jpg")',
+    backgroundImage: 'url("rooftop/login-moments.png")',
     primaryButtonClasses:
       "bg-white text-orange-600 font-bold hover:bg-gray-200",
     ghostButtonClasses:
       "border-2 border-white text-white hover:bg-white hover:text-orange-600",
     textColor: "text-white",
-    logo: "/logos/fs-logo.png", // <= coloque sua logo
+    logo: "/logos/fs-logo.png",
+    registerButtonMarginClasses: "mb-11",
+    // 🔑 MUDANÇA AQUI: Alinha o bloco todo ao final, e pb-10 (2.5rem) o empurra para cima.
+    contentClasses: "justify-end pb-63",
   },
 
   kotai: {
-    backgroundImage: "url('/kotai/fundo-kotai.jpg')",
-    // BOTÃO PRINCIPAL — verde da paleta (#00fe91)
-    primaryButtonClasses:
-      "bg-[#00fe91] text-[#0a0a0a] font-bold hover:bg-[#05e184]",
-
-    // BOTÃO GHOST — borda azul da paleta (#67b7ff) + texto azul
-    ghostButtonClasses:
-      "border-2 border-[#67b7ff] text-[#67b7ff] hover:bg-[#67b7ff] hover:text-[#0a0a0a]",
-
-    // COR DO TEXTO — branco gelo da paleta (#f2f2f3)
+    backgroundImage: "url('/kotai/login-kotai.png')",
+    primaryButtonClasses: "text-[#ffff]",
+    ghostButtonClasses: "text-[#ffff]",
     textColor: "text-[#f2f2f3]",
-
-    // LOGO
     logo: "/kotai/logo-kotai.png",
+    registerButtonMarginClasses: "mb-11",
+    // 🔑 MUDANÇA AQUI: Alinha o bloco todo ao final, e pb-10 (2.5rem) o empurra para cima.
+    contentClasses: "justify-end pb-63",
   },
   aegea: {
-    backgroundImage: "url('/aegea/fundo-aegea.jpg')",
-    // BOTÃO PRINCIPAL — verde da paleta (#00fe91)
-    primaryButtonClasses:
-      "bg-[#00fe91] text-[#0a0a0a] font-bold hover:bg-[#05e184]",
-
-    // BOTÃO GHOST — borda azul da paleta (#67b7ff) + texto azul
-    ghostButtonClasses:
-      "border-2 border-[#67b7ff] text-[#67b7ff] hover:bg-[#67b7ff] hover:text-[#0a0a0a]",
-
-    // COR DO TEXTO — branco gelo da paleta (#f2f2f3)
+    backgroundImage: "url('/aegea/login-aegea.png')",
+    primaryButtonClasses: "text-[#ffff]",
+    ghostButtonClasses: " text-[#ffff]",
     textColor: "text-[#f2f2f3]",
-
-    // LOGO
     logo: "/aegea/logo-aegea.png",
+    // Ajustado para dar um respiro entre Cadastrar e Login
+    registerButtonMarginClasses: "mb-11",
+    // 🔑 MUDANÇA AQUI: Alinha o bloco todo ao final, e pb-10 (2.5rem) o empurra para cima.
+    contentClasses: "justify-end pb-63",
   },
   default: {
-    backgroundImage: 'url("/bg-helisul.png")',
-    primaryButtonClasses:
-      "bg-cyan-400 text-blue-900 font-bold hover:bg-cyan-500",
-    ghostButtonClasses:
-      "border-2 border-white text-white hover:bg-white hover:text-blue-900",
+    backgroundImage: 'url("rooftop/login-moments.png")',
+    primaryButtonClasses: "text-[#ffff]pb-2 ",
+    ghostButtonClasses: " text-[#ffff] mt-2",
     textColor: "text-white",
-    logo: "/logos/default-logo.png", // <= coloque sua logo
+    logo: "/logos/fs-logo.png",
+    registerButtonMarginClasses: "mb-11",
+    // 🔑 MUDANÇA AQUI: Alinha o bloco todo ao final, e pb-10 (2.5rem) o empurra para cima.
+    contentClasses: "justify-end pb-63",
   },
 };
 
@@ -75,7 +69,7 @@ export default function SlugPage() {
   const theme = (slug && themes[slug]) || themes.default;
 
   const baseButtonClasses =
-    "w-full max-w-xs px-4 py-3 rounded-md font-semibold uppercase text-center transition duration-300 ease-in-out shadow-lg";
+    "w-full max-w-xs px-4 py-3 rounded-md font-semibold uppercase text-center transition duration-300 ease-in-out";
 
   return (
     <main className={`relative w-full h-screen ${theme.textColor}`}>
@@ -85,32 +79,26 @@ export default function SlugPage() {
         style={{ backgroundImage: theme.backgroundImage }}
       />
 
-      {/* CONTEÚDO */}
-      <div className="relative z-10 flex flex-col items-center justify-center w-full h-full text-center px-6 gap-6">
-        {/* 🔥 LOGO DINÂMICA */}
-        <Image
-          src={theme.logo}
-          alt="Logo do evento"
-          width={180}
-          height={180}
-          priority
-          className="mb-2 drop-shadow-xl"
-        />
+      {/* 1. CONTEÚDO EXTERNO */}
+      <div
+        className={`pt-20 relative z-10 flex flex-col items-center w-full h-full text-center ${theme.contentClasses}`}
+      >
+        {/* 2. CONTEÚDO INTERNO: Bloco de Botões */}
+        <div className="flex flex-col items-center">
+          <button
+            className={`${baseButtonClasses} ${theme.ghostButtonClasses} ${theme.registerButtonMarginClasses}`}
+            onClick={() => router.push(`/register/${slug}`)}
+          >
+            Cadastrar
+          </button>
 
-        {/* BOTÕES */}
-        <button
-          className={`${baseButtonClasses} ${theme.ghostButtonClasses}`}
-          onClick={() => router.push(`/register/${slug}`)}
-        >
-          Cadastrar
-        </button>
-
-        <button
-          className={`${baseButtonClasses} ${theme.primaryButtonClasses}`}
-          onClick={() => router.push(`/login/${slug}`)}
-        >
-          Login
-        </button>
+          <button
+            className={`${baseButtonClasses} ${theme.primaryButtonClasses}`}
+            onClick={() => router.push(`/login/${slug}`)}
+          >
+            Login
+          </button>
+        </div>
       </div>
 
       <Footer />

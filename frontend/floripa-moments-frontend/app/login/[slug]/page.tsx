@@ -24,7 +24,7 @@ interface Theme {
 const themes: Record<string, Theme> = {
   fs: {
     name: "Floripa Square",
-    backgroundImage: "url('/base-moments.jpg')",
+    backgroundImage: "url('/rooftop/base-moments.png')",
     textColor: "text-white",
     inputBg: "bg-white/90",
     inputBorder: "border-white/50",
@@ -39,7 +39,7 @@ const themes: Record<string, Theme> = {
   },
   kotai: {
     name: "Kotai",
-    backgroundImage: "url('/kotai/fundo-kotai.jpg')",
+    backgroundImage: "url('/kotai/fundo-kotai.png')",
 
     // TEXTOS
     textColor: "text-[#f2f2f3]",
@@ -62,8 +62,8 @@ const themes: Record<string, Theme> = {
   },
   aegea: {
     name: "Aegea",
-    backgroundImage: "url('/aegea/fundo-aegea.jpg')",
-    
+    backgroundImage: "url('/aegea/fundo-aegea.png')",
+
     // TEXTOS
     textColor: "text-[#f2f2f3]",
     // INPUTS
@@ -84,7 +84,7 @@ const themes: Record<string, Theme> = {
 
   default: {
     name: "Floripa Square",
-    backgroundImage: "url('/base-moments.jpg')",
+    backgroundImage: "url('/rooftop/base-moments.png')",
     textColor: "text-white",
     inputBg: "bg-white/90",
     inputBorder: "border-white/50",

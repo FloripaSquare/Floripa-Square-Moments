@@ -33,6 +33,7 @@ import UploadPhotosForm from "@/components/events/UploadPhotosForm";
 import CreatePhotographerForm from "@/components/events/CreatePhotographerForm";
 import EventDashboardAccordion from "@/components/admin/EventDashboardAccordion";
 import UploadMediaForm from "@/components/events/UploadMediaForm";
+import MediaManager from "@/components/MediaManager";
 
 // --- Tipos de Dados ---
 
@@ -612,6 +613,7 @@ export default function AdminDashboardPage() {
               Upload de Mídia
             </h2>
             <UploadMediaForm events={events} onUploaded={fetchAllData} />
+            <MediaManager eventSlug={selectedEventSlug} />
           </section>
         </div>
       </div>

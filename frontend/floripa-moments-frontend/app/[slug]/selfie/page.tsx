@@ -19,7 +19,7 @@ type Theme = {
 
 const themes: Record<string, Theme> = {
   fs: {
-    backgroundImage: "url('/base-moments.jpg')",
+    backgroundImage: "url('/base-moments.png')",
     textColor: "text-white",
     primaryButton: "bg-[#f37021] hover:bg-[#d35e1d] text-white",
     secondaryButton: " bg-[#C65C3C] hover:bg-[#A94C16] text-white",
@@ -33,7 +33,7 @@ Para começar, tire uma selfie e depois clique no botão ENVIAR & BUSCAR FOTOS.`
   },
 
   kotai: {
-    backgroundImage: "url('/kotai/fundo-kotai.jpg')",
+    backgroundImage: "url('/kotai/fundo-kotai.png')",
     textColor: "text-white",
     primaryButton: "bg-[#0084ff] hover:bg-[#006cd1] text-white",
     secondaryButton: "bg-white/10 text-white hover:bg-white/20",
@@ -49,7 +49,7 @@ Para começar, tire uma selfie e depois clique no botão ENVIAR & BUSCAR FOTOS.`
   },
 
   aegea: {
-    backgroundImage: "url('/aegea/fundo-aegea.jpg')",
+    backgroundImage: "url('/aegea/fundo-aegea.png')",
     textColor: "text-white",
     primaryButton: "bg-[#0084ff] hover:bg-[#006cd1] text-white",
     secondaryButton: "bg-white/10 text-white hover:bg-white/20",
@@ -57,15 +57,15 @@ Para começar, tire uma selfie e depois clique no botão ENVIAR & BUSCAR FOTOS.`
       "border-2 border-white text-white hover:bg-white hover:text-[#0084ff]",
     tertiaryButton: "bg-white/10 text-white hover:bg-white/20",
 
-    text: `Olá que bom que você está no 4º Prêmio Águas de Jornalismo Ambiental!
-
-Esta é a sua galeria oficial de fotos no evento. Compartilhe momentos incríveis em suas redes sociais.
-
-Para começar, tire uma selfie e depois clique no botão ENVIAR & BUSCAR FOTOS.`,
+    text: `Olá que bom que você está no 
+    4º Prêmio Águas de Jornalismo Ambiental!
+    Esta é a sua galeria oficial de fotos no evento. Compartilhe momentos incríveis em suas redes sociais.
+    Para começar, tire uma selfie e depois clique no botão
+    ENVIAR & BUSCAR FOTOS.`,
   },
 
   default: {
-    backgroundImage: "url('/base-moments.jpg')",
+    backgroundImage: "url('/rooftop/base-moments.png')",
     textColor: "text-white",
     primaryButton: "bg-[#f37021] hover:bg-[#d35e1d] text-white",
     secondaryButton: "bg-white/10 text-white hover:bg-white/20",

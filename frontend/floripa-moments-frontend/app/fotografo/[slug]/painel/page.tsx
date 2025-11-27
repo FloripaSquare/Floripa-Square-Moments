@@ -6,6 +6,7 @@ import { useRouter, useParams } from "next/navigation";
 import UploadPhotosForm from "@/components/events/UploadPhotosForm";
 import Footer from "@/components/Footer";
 import PhotoManager from "@/components/PhotoManager";
+import MediaManager from "@/components/MediaManager";
 
 interface UserData {
   id: string;
@@ -115,6 +116,7 @@ export default function PhotographerPanel() {
             />
           </section>
         </div>
+        <MediaManager eventSlug={userData.event_slug} />
       </main>
       <Footer />
     </>
