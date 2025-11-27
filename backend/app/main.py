@@ -14,7 +14,7 @@ from app.errors import botocore_error_handler, generic_error_handler
 from botocore.exceptions import BotoCoreError, ClientError
 
 from app.routes import health, events, ingest, search, admin, privacy, users, metrics, auth, uploads, sessions, \
-    users_me, gallery, photos, comments
+    users_me, gallery, photos, comments, dowload_link
 from app.schemas.session import active_sessions_table
 from app.security.jwt import SECRET_KEY, ALGORITHM
 
@@ -91,6 +91,7 @@ api_router.include_router(users.router, prefix="/users", tags=["Users"])
 app.include_router(users_me.router, prefix="/users", tags=["Users Me"])
 app.include_router(gallery.router, prefix="/gallery", tags=["Gallery"])
 app.include_router(comments.router, prefix="/comments", tags=["Comments"])
+app.include_router(dowload_link.router, prefix="/download", tags=["Download"])
 
 app.include_router(photos.router, prefix="/photos", tags=["Photos"])
 # Rotas de Administração

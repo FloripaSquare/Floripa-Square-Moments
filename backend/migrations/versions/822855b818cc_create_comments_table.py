@@ -30,4 +30,5 @@ def upgrade():
 
 
 def downgrade():
+    # Removendo apenas o comando de drop_table
     op.drop_table("comments")

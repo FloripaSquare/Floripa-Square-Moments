@@ -33,6 +33,7 @@ class MetricOut(MetricIn):
 class AdminMetricSummary(BaseModel):
     event_slug: Optional[str] = None
     user_name: str
+    last_name: Optional[str] = None
     email: Optional[str] = None       # Adicionado
     instagram: Optional[str] = None   # Adicionado
     whatsapp: Optional[str] = None    # Adicionado

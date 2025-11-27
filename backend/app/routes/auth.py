@@ -9,7 +9,7 @@ import uuid
 from app.services.db import get_conn
 from app.schemas.user import users_table, UserOut, UserRole
 from app.schemas.session import active_sessions_table
-from app.security.jwt import create_access_token
+from app.security.jwt import create_access_token, require_any_user
 
 router = APIRouter()
 
@@ -74,4 +74,15 @@ async def login(
             "event_slug": user_from_db["event_slug"],
         }
     }
+
+@router.post("/refresh")
+async def refresh(payload=Depends(require_any_user)):
+    jti = str(uuid.uuid4())
+    token, exp = create_access_token({
+        "sub": payload["user_id"],
+        "role": payload["role"]
+    }, jti=jti)
+
+    return {"access_token": token, "expires_at": exp}
+
 

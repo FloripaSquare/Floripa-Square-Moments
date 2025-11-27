@@ -12,8 +12,7 @@ from app.schemas.user import UserRole
 
 SECRET_KEY = os.getenv("SECRET_KEY", "seu-segredo-super-secreto")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 1440  # 24h
-
+ACCESS_TOKEN_EXPIRE_MINUTES = 60
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 
@@ -23,6 +22,7 @@ def create_access_token(data: dict, jti: str):
     to_encode.update({"exp": expire, "jti": jti})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt, expire
+
 
 
 async def require_role(required_role: UserRole, token: str = Depends(oauth2_scheme), conn: AsyncSession = Depends(get_conn)):

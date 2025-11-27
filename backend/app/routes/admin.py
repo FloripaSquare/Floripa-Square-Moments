@@ -1,9 +1,11 @@
+import secrets
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, case
 from typing import List, Literal
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
 # Import de serviços
 from app.services.db import get_conn
@@ -13,6 +15,7 @@ from app.services import downloads as downloads_service
 # Import de schemas e tabelas
 from app.schemas.event import CreateEventIn, EventOut, UpdateEventIn, events_table
 from app.schemas.metrics import AdminMetricSummary, metrics_table
+from app.schemas.dowload_link import download_links_table
 from app.schemas.user import users_table, UserOut
 from app.security.jwt import require_admin
 
@@ -59,17 +62,27 @@ async def update_event(slug: str, payload: UpdateEventIn, conn: AsyncSession = D
 # --- GERAÇÃO DE LINK PARA DOWNLOAD (sem alterações) ---
 
 @router.post("/events/{slug}/generate-download-link", response_model=DownloadLinkOut)
-async def generate_download_link(slug: str):
-    """Gera um link de download para um .zip com todas as fotos do evento."""
-    try:
-        url = await downloads_service.generate_event_photos_zip_url(slug)
-        return DownloadLinkOut(url=url)
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except Exception as e:
-        print(f"Erro inesperado ao gerar link de download para o evento '{slug}': {e}")
-        raise HTTPException(status_code=500, detail="Não foi possível gerar o link de download.")
+async def generate_download_link(slug: str, conn: AsyncSession = Depends(get_conn)):
+    password = secrets.token_hex(3)  # EX: "9af3bd"
+    expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
 
+    zip_url = await downloads_service.generate_event_photos_zip_url(slug)
+
+    await conn.execute(
+        download_links_table.insert().values(
+            slug=slug,
+            url=zip_url,
+            password=password,
+            expires_at=expires_at,
+        )
+    )
+    await conn.commit()
+
+    return {
+        "url": f"https:/moments-floripasquare.com.br/{slug}/download",
+        "password": password,
+        "expires_at": expires_at,
+    }
 
 # --- ROTAS DE MÉTRICAS (CORRIGIDAS E COMPLETAS) ---
 
@@ -133,6 +146,7 @@ async def event_metrics_by_slug(event_slug: str, conn: AsyncSession = Depends(ge
         select(
             users_table.c.event_slug,
             users_table.c.name.label("user_name"),
+            users_table.c.last_name,
             users_table.c.email,
             users_table.c.instagram,
             users_table.c.whatsapp,
@@ -145,6 +159,7 @@ async def event_metrics_by_slug(event_slug: str, conn: AsyncSession = Depends(ge
         .group_by(
             users_table.c.event_slug,
             users_table.c.name,
+            users_table.c.last_name,
             users_table.c.email,
             users_table.c.instagram,
             users_table.c.whatsapp

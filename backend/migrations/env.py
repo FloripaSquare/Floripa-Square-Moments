@@ -16,11 +16,26 @@ sys.path.insert(0, os.path.realpath(os.path.join(os.path.dirname(__file__), '..'
 from app.services.db import metadata
 
 # --- Importe TODOS os seus módulos de schema ---
+
+# 1. Usuários
 from app.schemas.user import users_table
+
+# 2. Eventos
 from app.schemas.event import events_table
+
+# 3. Métricas
 from app.schemas.metrics import metrics_table
+
+# 4. Sessões e Token Denylist
 from app.schemas.session import active_sessions_table, token_denylist_table
 
+# 5. Fotos (Faltante Anteriormente)
+from app.schemas.photo import photos_table
+
+# 6. Comentários (Faltante Anteriormente)
+from app.schemas.comments import comments_table
+
+from app.schemas.dowload_link import download_links_table
 
 # Carrega variáveis do arquivo .env
 load_dotenv()

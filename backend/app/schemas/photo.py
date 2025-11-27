@@ -15,7 +15,7 @@ photos_table = Table(
     Column("uploader_id", SQLAlchemyUUID(as_uuid=True), ForeignKey("users.id"), nullable=True),  # ✅ Agora pode ser NULL
     Column("event_slug", String, nullable=False),
     Column("s3_key", String, nullable=False),
-    Column("s3_url", String, nullable=False),
+    Column("s3_url", String, nullable=True),
     Column("status", String, nullable=False, default="active"),
     Column("created_at", DateTime, default=datetime.utcnow),
 )
