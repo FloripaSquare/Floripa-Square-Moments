@@ -37,6 +37,8 @@ from app.schemas.comments import comments_table
 
 from app.schemas.dowload_link import download_links_table
 
+from app.schemas.media import media_table
+
 # Carrega variáveis do arquivo .env
 load_dotenv()
 
