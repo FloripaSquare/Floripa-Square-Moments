@@ -136,7 +136,6 @@ export default function EventDashboardAccordion({
       const data = await res.json();
       setDownloadLink(data.url);
       setDownloadPassword(data.password);
-      setDownloadExpiration(data.expires_at);
     } catch (error: any) {
       console.error(error);
       alert(`Erro: ${error.message}`);
@@ -236,7 +235,7 @@ export default function EventDashboardAccordion({
                     </div>
 
                     <p className="text-sm">
-                      <strong>Senha:</strong>{" "}
+                      <strong>Senha:</strong>
                       <span className="font-mono bg-gray-100 p-1 rounded">
                         {downloadPassword}
                       </span>
