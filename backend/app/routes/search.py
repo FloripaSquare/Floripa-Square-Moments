@@ -11,12 +11,16 @@ from app.security.jwt import require_any_user
 import hashlib
 import time
 import uuid  # 👈 Importar UUID para conversão
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 
 # ▼▼▼ IMPORTAR O QUE PRECISAMOS PARA A CONSULTA ▼▼▼
 from sqlalchemy import select
 from app.schemas.photo import photos_table
 
 # ▲▲▲ IMPORTAR O QUE PRECISAMOS PARA A CONSULTA ▲▲▲
+
+_rekognition_executor = ThreadPoolExecutor(max_workers=10)
 
 router = APIRouter()
 
@@ -38,7 +42,11 @@ async def search_faces(
     validate_image_bytes(img_bytes)
 
     try:
-        res = search_by_image_bytes(event_slug, img_bytes, max_faces=50, threshold=75)
+        loop = asyncio.get_running_loop()
+        res = await loop.run_in_executor(
+            _rekognition_executor,
+            lambda: search_by_image_bytes(event_slug, img_bytes, max_faces=50, threshold=75)
+        )
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Erro ao buscar faces: {str(e)}"
