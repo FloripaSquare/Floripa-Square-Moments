@@ -142,32 +142,21 @@ export default function ResultPage() {
     }
   }, []);
 
-  // --- Carregar resultados ---
+  // --- Carregar resultados do localStorage ---
   useEffect(() => {
     async function loadResults() {
-      const token = localStorage.getItem("user_token");
-      if (!token) {
-        console.warn("Nenhum token encontrado. Usuário precisa logar.");
-        return;
-      }
-
       try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL!;
-        const res = await fetch(`${API_URL}/search/photos?slug=${slug}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        // Ler resultado salvo do localStorage
+        const cachedResult = localStorage.getItem("search_result");
 
-        if (!res.ok) {
-          // Caso o token tenha expirado
-          if (res.status === 401) {
-            console.log("Token expirado, solicitar login.");
-            return;
-          }
-          throw new Error("Erro ao buscar fotos");
+        if (!cachedResult) {
+          console.warn("Nenhum resultado de busca encontrado.");
+          return;
         }
 
-        const data = (await res.json()) as SearchOut;
+        const data = JSON.parse(cachedResult) as SearchOut;
 
+        // Remover duplicatas
         const unique = Array.from(
           new Map(data.items.map((i) => [i.key, i])).values()
         );
@@ -175,10 +164,9 @@ export default function ResultPage() {
         setSearchResult({ count: unique.length, items: unique });
         setDisplayItems(unique.slice(0, perPage));
 
-        // opcional: manter versão cacheada
-        localStorage.setItem("search_result", JSON.stringify(data));
+        console.log(`✅ ${unique.length} fotos carregadas do cache`);
       } catch (err) {
-        console.error("Falha ao carregar resultados:", err);
+        console.error("Falha ao carregar resultados do cache:", err);
       }
     }
 
