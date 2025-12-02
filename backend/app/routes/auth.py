@@ -5,6 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, insert
 from passlib.hash import bcrypt
 import uuid
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 
 from app.services.db import get_conn
 from app.schemas.user import users_table, UserOut, UserRole
@@ -13,19 +15,11 @@ from app.security.jwt import create_access_token, require_any_user
 
 router = APIRouter()
 
-# app/routes/auth.py
-from fastapi import APIRouter, Depends, HTTPException, Form, Request, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, insert
-from passlib.hash import bcrypt
-import uuid
-
-from app.services.db import get_conn
-from app.schemas.user import users_table, UserOut, UserRole
-from app.schemas.session import active_sessions_table
-from app.security.jwt import create_access_token
-
-router = APIRouter()
+# Executor para operações bloqueantes de autenticação (bcrypt)
+_auth_executor = ThreadPoolExecutor(
+    max_workers=20,
+    thread_name_prefix="auth_worker"
+)
 
 
 @router.post("/login", status_code=status.HTTP_200_OK)
@@ -39,8 +33,20 @@ async def login(
     result = await conn.execute(stmt)
     user_from_db = result.mappings().first()
 
-    if not user_from_db or not user_from_db["password_hash"] or not bcrypt.verify(password,
-                                                                                  user_from_db["password_hash"]):
+    # Verificação básica de existência do usuário
+    if not user_from_db or not user_from_db["password_hash"]:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciais inválidas")
+
+    # Mover bcrypt.verify para thread pool (operação bloqueante)
+    loop = asyncio.get_running_loop()
+    password_valid = await loop.run_in_executor(
+        _auth_executor,
+        bcrypt.verify,
+        password,
+        user_from_db["password_hash"]
+    )
+
+    if not password_valid:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciais inválidas")
 
     jti = str(uuid.uuid4())
