@@ -14,13 +14,12 @@ if not DATABASE_URL:
 # Ajuste do engine com pool seguro para asyncpg
 engine = create_async_engine(
     DATABASE_URL,
-    echo=True,
-    future=True,
-    pool_size=10,           # número máximo de conexões simultâneas
-    max_overflow=20,        # conexões extras em pico
-    pool_timeout=30,        # espera até pegar conexão
-    pool_recycle=1800,      # recicla conexões a cada 30min
-    pool_pre_ping=True,     # testa se conexão está ativa
+    pool_size=30,
+    max_overflow=20,
+    pool_timeout=30,
+    pool_recycle=3600,
+    pool_pre_ping=True,
+    echo=False
 )
 
 async_session_maker = sessionmaker(
