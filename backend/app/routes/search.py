@@ -20,7 +20,10 @@ from app.schemas.photo import photos_table
 
 # ▲▲▲ IMPORTAR O QUE PRECISAMOS PARA A CONSULTA ▲▲▲
 
-_rekognition_executor = ThreadPoolExecutor(max_workers=10)
+_rekognition_executor = ThreadPoolExecutor(
+    max_workers=30,
+    thread_name_prefix="rekognition_worker"
+)
 
 router = APIRouter()
 
