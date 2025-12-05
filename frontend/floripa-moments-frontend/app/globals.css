@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+@custom-variant h-tall {
+  @media (min-height: 900px) {
+    @slot;
+  }
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;

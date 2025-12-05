@@ -24,7 +24,7 @@ const themes: Record<string, Theme> = {
     logo: "/logos/fs-logo.png",
     registerButtonMarginClasses: "mb-11",
     // 🔑 MUDANÇA AQUI: Alinha o bloco todo ao final, e pb-10 (2.5rem) o empurra para cima.
-    contentClasses: "justify-end pb-63",
+    contentClasses: "justify-end pb-74 h-tall:pb-83",
   },
 
   kotai: {
@@ -35,7 +35,7 @@ const themes: Record<string, Theme> = {
     logo: "/kotai/logo-kotai.png",
     registerButtonMarginClasses: "mb-11",
     // 🔑 MUDANÇA AQUI: Alinha o bloco todo ao final, e pb-10 (2.5rem) o empurra para cima.
-    contentClasses: "justify-end pb-63",
+    contentClasses: "justify-end pb-74 h-tall:pb-83",
   },
   aegea: {
     backgroundImage: "url('/aegea/login-aegea.png')",
@@ -46,7 +46,7 @@ const themes: Record<string, Theme> = {
     // Ajustado para dar um respiro entre Cadastrar e Login
     registerButtonMarginClasses: "mb-13",
     // 🔑 MUDANÇA AQUI: Alinha o bloco todo ao final, e pb-10 (2.5rem) o empurra para cima.
-    contentClasses: "justify-end pb-63",
+    contentClasses: "justify-end pb-74 h-tall:pb-83",
   },
   default: {
     backgroundImage: 'url("rooftop/login-moments.png")',
@@ -56,7 +56,7 @@ const themes: Record<string, Theme> = {
     logo: "/logos/fs-logo.png",
     registerButtonMarginClasses: "mb-11",
     // 🔑 MUDANÇA AQUI: Alinha o bloco todo ao final, e pb-10 (2.5rem) o empurra para cima.
-    contentClasses: "justify-end pb-63",
+    contentClasses: "justify-end pb-74 h-tall:pb-83",
   },
 };
 
