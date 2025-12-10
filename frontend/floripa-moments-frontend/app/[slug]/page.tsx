@@ -68,16 +68,16 @@ export default function SlugPage() {
   const borderGradient = `linear-gradient(135deg, ${theme.gradientFrom}, ${theme.gradientTo})`;
 
   return (
-    <main className={`relative w-full min-h-screen min-h-[100dvh] overflow-hidden ${theme.textColorClass}`}>
+    <main className={`relative w-full min-h-screen min-h-[100dvh] overflow-hidden border-0 outline-0 ${theme.textColorClass}`}>
       {/* Fundo da página */}
       <div
-        className="absolute inset-0 bg-cover bg-center"
+        className="absolute inset-0 bg-cover bg-center border-0"
         style={{ backgroundImage: `url('${theme.backgroundUrl}')`, backgroundAttachment: "fixed" }}
       />
 
       {/* Conteúdo */}
-      <div className="relative z-10 flex min-h-[100dvh] flex-col items-center justify-center px-5 py-10">
-        <div className="w-full max-w-[340px] space-y-5">
+      <div className="relative z-10 flex min-h-[100dvh] flex-col items-center justify-center px-5 py-10 border-0 outline-0">
+        <div className="w-full max-w-[340px] space-y-5 border-0 outline-0">
 
           {/* CAIXA LOGO */}
           {theme.logo && (
@@ -155,6 +155,16 @@ export default function SlugPage() {
                 torne-se parte desse marco
               </p>
             </div>
+          </div>
+
+          {/* Logo Floripa Moments */}
+          <div className="mt-6 flex justify-center border-0 outline-0">
+            <img
+              src="/logo-floripaMoments/Floripa%20Square%20Moments.png"
+              alt="Floripa Square Moments"
+              className="h-60 w-auto object-contain opacity-95"
+              loading="lazy"
+            />
           </div>
         </div>
       </div>
