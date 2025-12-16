@@ -30,3 +30,5 @@ pnpm-debug.log*
 
 # Arquivos grandes ignorados
 /public/promo.MP4
+.vercel
+.env*.local
