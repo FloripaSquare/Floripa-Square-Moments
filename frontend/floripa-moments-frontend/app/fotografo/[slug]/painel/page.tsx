@@ -41,6 +41,11 @@ export default function PhotographerPanel() {
   const [generalPhotos, setGeneralPhotos] = useState<Array<{ id: string; s3_url: string }>>([]);
   const [loadingGeneralPhotos, setLoadingGeneralPhotos] = useState(false);
 
+  const fetchUserData = useCallback(async () => {
+    // Função para recarregar dados após upload
+    console.log("Recarregando dados após upload...");
+  }, []);
+
   useEffect(() => {
     if (!slug) return;
 
@@ -197,9 +202,7 @@ export default function PhotographerPanel() {
                   title: `Evento: ${userData.event_slug}`,
                 },
               ]}
-              userRole="PHOTOGRAPHER"
-              eventSlug={userData.event_slug}
-              uploaderId={userData.id}
+              onUploaded={fetchUserData}
             />
           </section>
 

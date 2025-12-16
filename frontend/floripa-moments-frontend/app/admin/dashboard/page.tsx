@@ -638,7 +638,6 @@ export default function AdminDashboardPage() {
             </h2>
             <UploadPhotosForm
               events={events}
-              userRole="ADMIN"
               onUploaded={fetchAllData}
             />
           </section>
