@@ -1,7 +1,7 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, BackgroundTasks
+﻿from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.services.s3 import presign_get, BUCKET_RAW
-from app.services.rekognition import search_by_image_bytes
+from app.services.storage import presign_get, get_bucket_raw
+from app.services.face import search_by_image_bytes
 from app.services.db import get_conn
 from app.schemas.search import SearchOut, ItemUrl
 from app.routes.uploads import validate_image_bytes
@@ -10,20 +10,14 @@ from app.services.metrics import track
 from app.security.jwt import require_any_user
 import hashlib
 import time
-import uuid  # 👈 Importar UUID para conversão
+import uuid
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 
-# ▼▼▼ IMPORTAR O QUE PRECISAMOS PARA A CONSULTA ▼▼▼
 from sqlalchemy import select
 from app.schemas.photo import photos_table
 
-# ▲▲▲ IMPORTAR O QUE PRECISAMOS PARA A CONSULTA ▲▲▲
-
-_rekognition_executor = ThreadPoolExecutor(
-    max_workers=30,
-    thread_name_prefix="rekognition_worker"
-)
+_rekognition_executor = ThreadPoolExecutor(max_workers=10)
 
 router = APIRouter()
 
@@ -38,7 +32,7 @@ async def search_faces(
         user=Depends(require_any_user),
 ):
     """
-    Busca faces correspondentes a uma imagem de selfie em um evento específico.
+    Busca faces correspondentes a uma imagem de selfie em um evento especifico.
     """
     start_time = time.time()
     img_bytes = await selfie.read()
@@ -59,24 +53,15 @@ async def search_faces(
         res.get("FaceMatches", []), key=lambda m: m["Similarity"], reverse=True
     )
 
-    #
-    # ▼▼▼ ESTA É A LÓGICA DE CORREÇÃO ▼▼▼
-    #
-
-    # 1. Pega os IDs (UUIDs) que o Rekognition retornou.
-    # O 'ExternalImageId' que salvamos no upload era o 'image_id' da tabela.
     matched_image_ids = [m['Face']['ExternalImageId'] for m in matches]
 
     if not matched_image_ids:
-        # Se não achou nada, retorna vazio
         return SearchOut(count=0, items=[], zip=None)
 
-    # 2. Busca no banco de dados pelas 's3_key' REAIS usando esses IDs.
-    # Converte os IDs de string para UUID para a consulta
     try:
         uuid_list = [uuid.UUID(img_id) for img_id in matched_image_ids]
     except ValueError:
-        print("Erro: Rekognition retornou um ExternalImageId que não é um UUID.")
+        print("Erro: Face API retornou um ExternalImageId que nao e um UUID.")
         uuid_list = []
 
     s3_keys = []
@@ -85,16 +70,10 @@ async def search_faces(
             photos_table.c.id.in_(uuid_list)
         )
         result = await conn.execute(query)
-
-        # Pega as s3_keys (extrai da tupla/row) e filtra Nones
         s3_keys = [row[0] for row in result.all() if row[0] is not None]
 
-    # 3. Gera as URLs com as chaves corretas.
-    urls = [ItemUrl(key=k, url=presign_get(BUCKET_RAW, k)) for k in s3_keys]
-
-    #
-    # ▲▲▲ FIM DA LÓGICA DE CORREÇÃO ▲▲▲
-    #
+    bucket = get_bucket_raw()
+    urls = [ItemUrl(key=k, url=presign_get(bucket, k)) for k in s3_keys]
 
     zip_download_url = None
     if create_zip and s3_keys:
@@ -102,7 +81,7 @@ async def search_faces(
         zip_hash = hashlib.md5(str(keys_tuple).encode()).hexdigest()
         zip_key = f"zips/search-{zip_hash}.zip"
         background_tasks.add_task(create_zip_from_keys, s3_keys, zip_key)
-        zip_download_url = presign_get(BUCKET_RAW, zip_key, expires=300)
+        zip_download_url = presign_get(bucket, zip_key, expires=300)
 
     duration = time.time() - start_time
 

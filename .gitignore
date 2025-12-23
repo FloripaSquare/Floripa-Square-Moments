@@ -26,3 +26,5 @@ pnpm-debug.log*
 build/
 out/
 .next/
+.vercel
+.env*.local

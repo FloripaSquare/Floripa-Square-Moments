@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, Query, Depends
+﻿from fastapi import APIRouter, UploadFile, File, HTTPException, Query, Depends
 from typing import List, Optional
 import imghdr
 import asyncio
@@ -10,8 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.schemas.photo import photos_table, PhotoResponse
 from app.services.db import get_conn
-from app.services.s3 import put_bytes, BUCKET_RAW, presign_get
-from app.services.rekognition import index_s3_object, sanitize_key_for_rekognition
+from app.services.storage import put_bytes, get_bucket_raw, presign_get
+from app.services.face import index_s3_object, sanitize_key_for_rekognition
 
 router = APIRouter()
 MAX_SIZE_MB = 1000
@@ -22,11 +22,11 @@ def validate_image_bytes(data: bytes):
     if len(data) > MAX_SIZE_MB * 1024 * 1024:
         raise HTTPException(413, f"Arquivo acima de {MAX_SIZE_MB}MB")
     if imghdr.what(None, h=data) not in ALLOWED_FORMATS:
-        raise HTTPException(415, "Formato não suportado (use jpg ou png)")
+        raise HTTPException(415, "Formato nao suportado (use jpg ou png)")
 
 
 async def process_file(event_slug: str, uploader_id: Optional[uuid.UUID], file: UploadFile):
-    """Processa um único arquivo: valida, salva no S3 e indexa no Rekognition."""
+    """Processa um unico arquivo: valida, salva no Storage e indexa no Face API."""
     try:
         data = await file.read()
         validate_image_bytes(data)
@@ -39,23 +39,23 @@ async def process_file(event_slug: str, uploader_id: Optional[uuid.UUID], file: 
         unique_filename = f"{ts}-{image_id.hex}-{sanitized_name}"
         s3_key = f"{event_slug}/photos/{unique_filename}"
 
-        # 1. Envia para o S3
-        put_bytes(BUCKET_RAW, s3_key, data, file.content_type or "image/jpeg")
+        bucket = get_bucket_raw()
 
-        # 2. Envia para o Rekognition
+        # 1. Envia para o Storage
+        put_bytes(bucket, s3_key, data, file.content_type or "image/jpeg")
+
+        # 2. Envia para o Face API
         loop = asyncio.get_event_loop()
         await loop.run_in_executor(
-            None, lambda: index_s3_object(event_slug, BUCKET_RAW, s3_key, str(image_id))
+            None, lambda: index_s3_object(event_slug, bucket, s3_key, str(image_id))
         )
 
         return {"image_id": image_id, "s3_key": s3_key}
 
     except HTTPException as e:
-        # Repassa exceções HTTP (validação falhou)
-        print(f"!!!!!!!! ERRO DE VALIDAÇÃO: {file.filename}: {e.detail} !!!!!!!!")
+        print(f"!!!!!!!! ERRO DE VALIDACAO: {file.filename}: {e.detail} !!!!!!!!")
         return None
     except Exception as e:
-        # Captura outros erros (S3, Rekognition)
         print(f"!!!!!!!! ERRO AO PROCESSAR O ARQUIVO {file.filename}: {e} !!!!!!!!")
         return None
 
@@ -69,8 +69,8 @@ async def upload_photos_batch(
 ):
     """
     Upload de fotos em lote.
-    - Se 'uploader_id' for informado, é upload de fotógrafo.
-    - Se for None, é upload de admin.
+    - Se 'uploader_id' for informado, e upload de fotografo.
+    - Se for None, e upload de admin.
     """
 
     # Processa todos os arquivos em paralelo
@@ -80,7 +80,6 @@ async def upload_photos_batch(
     # Filtra apenas os uploads que tiveram sucesso
     successful_uploads = [res for res in upload_results if res]
     if not successful_uploads:
-        # Se nenhum arquivo foi processado, retorna lista vazia
         return []
 
     # Prepara os dados para inserir no banco
@@ -104,26 +103,15 @@ async def upload_photos_batch(
     query = select(photos_table).where(photos_table.c.id.in_(photo_ids))
     result = await db.execute(query)
 
-    # Comita a transação (salva o insert)
     await db.commit()
 
-    # Pega os resultados do select
     newly_created_photos = result.all()
 
-
+    bucket = get_bucket_raw()
     response_data = []
     for photo_row in newly_created_photos:
-        # Converte a "Row" do SQLAlchemy para um dict
         photo_dict = dict(photo_row._mapping)
-
-        # Gera a URL pré-assinada fresca usando a s3_key
-        # Isso garante que o frontend receba uma URL válida
-        photo_dict["s3_url"] = presign_get(BUCKET_RAW, photo_dict["s3_key"])
-
+        photo_dict["s3_url"] = presign_get(bucket, photo_dict["s3_key"])
         response_data.append(photo_dict)
-    #
-    # ▲▲▲ FIM DA CORREÇÃO 2 ▲▲▲
-    #
 
-    # Retorna a lista de dicts com as URLs frescas para o frontend
     return response_data
